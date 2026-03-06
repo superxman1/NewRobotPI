@@ -10,6 +10,9 @@ FEHMotor front(FEHMotor::Motor0, 9.0);
 FEHMotor right(FEHMotor::Motor1, 9.0);
 FEHMotor left(FEHMotor::Motor2, 9.0);
 
+DigitalEncoder left_encoder(FEHIO::Pin8);
+DigitalEncoder right_encoder(FEHIO::Pin9);
+
 void frontmove(float percent, float time);
 void linleftmove(float percent);
 void linrightmove(float percent, float time);
@@ -124,18 +127,16 @@ void ERCMain()
     int x, y;
     while(!LCD.Touch(&x, &y)){};
 
-    //Move from one side to another (Milestone Part 1)
-    frontmove(50.0, 3.0);
+    right_encoder.ResetCounts();
+    left_encoder.ResetCounts();
+    right.SetPercent(25.0);
+    left.SetPercent(-25.0);
+
+    while(right_encoder.Counts() < 410);
+
     stop();
 
+    LCD.WriteLine(right_encoder.Counts());
+    LCD.WriteLine(left_encoder.Counts());
 
-    //Wait for Touch to start Milestone Part 2
-    while(!LCD.Touch(&x, &y)){};
-
-    //Move up and down the ramp (Milestone Part 2 and Bonus)
-    frontmove(50.0, 2.0);
-    stop();
-    Sleep(2.0);
-    backmove(50.0, 2.0);
-    stop();
 }
