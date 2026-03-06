@@ -1,233 +1,399 @@
-#include <FEH.h>
-#include <Arduino.h>
-#include <FEHLCD.h>
-#include <FEHIO.h>
-#include <FEHSD.h>
+#include <FEH.h> 
 
-//Pivot Constants
-#define Apple_Pickup_ANGLE 90
-#define Apple_Dropoff_ANGLE 0
-#define Window_ANGLE 45
-#define Lever_Down_ANGLE 90
-#define Lever_Up_ANGLE 0
-#define Servo_Max_Angle 180
-#define Servo_Min_Angle 0
+#include <Arduino.h> 
 
-//Compost Mechanism Constants
-#define Compost_Speed 25.0
+ 
 
-//Hello
-// Declare things like Motors, Servos, etc. here
-// For example:
-// FEHMotor leftMotor(FEHMotor::Motor0, 6.0);
-// FEHServo servo(FEHServo::Servo0);
+//Hello 
 
-FEHMotor rightdrive(FEHMotor::Motor1,9.0);
-FEHMotor leftdrive(FEHMotor::Motor0,9.0);
-FEHMotor compost(FEHMotor::Motor2,5.0);
-FEHServo arm(FEHServo::Servo0);
+// Declare things like Motors, Servos, etc. here 
 
-//Pivot funtions
-void Pivot_Set_Angle(int degree);
-//Compost mechanism functions
-void Compost_Set_Speed(float percent);
-//Crayola Bot Drive Functions
-void Drive_Forward();
-void Drive_Back();
-void Turn_Right();
-void Turn_Left();
-void Stop();
+// For example: 
 
-//Pivot functions
-void Pivot_Set_Angle(int degree){
-    arm.SetDegree(degree);
-    return;
-}
+// FEHMotor leftMotor(FEHMotor::Motor0, 6.0); 
 
-//Compost mechanism functions
-void Compost_Set_Speed(float percent){
-    compost.SetPercent(percent);
-    return;
-}
+// FEHServo servo(FEHServo::Servo0); 
 
-//Crayola Bot Drive Functions//
+ 
 
-/*
-void Drive_Forward(){
-    rightdrive.SetPercent(-25.);
-    leftdrive.SetPercent(25.);
-    return;
-}
+//after testing we will change these values to their correct encodings per inch, but just placeholders for now 
 
-void Drive_Back(){
-    rightdrive.SetPercent(-25.);
-    leftdrive.SetPercent(-25.);
-    return;
-}
+#define R_ENCODE_P_IN 1 
 
-void Turn_Right(){
-    rightdrive.SetPercent(-15.);
-    leftdrive.SetPercent(15.);
-    Sleep(3.0);
-    Stop();
-    return;
-}
+#define L_ENCODE_P_IN 1 
 
-void Turn_Left(){
-    rightdrive.SetPercent(15.);
-    leftdrive.SetPercent(-15.);
-    Sleep(3.0);
-    Stop();
-    return;
-}
+#define F_ENCODE_P_IN 1 
 
-void Stop(){
-    rightdrive.SetPercent(0.);
-    leftdrive.SetPercent(0.);
-    return;
-}
-*/
+ 
 
-    enum LineStates {
-        MIDDLE,
-        RIGHT,
-        LEFT
-    };
+//each of the 6 directions possible from any one point (see diagram for greater detail) 
 
+enum Direction{ 
 
+    FORWARD, 
 
-    void ERCMain()
-    {
-        int x, y; //for touch screen
+    REVERSE, 
 
-        // Declarations for crayola bot bump switches//
-        
-        /*
-        DigitalInputPin fr_switch(FEHIO::Pin6);
-        DigitalInputPin fl_switch(FEHIO::Pin7);
-        DigitalInputPin br_switch(FEHIO::Pin8);
-        DigitalInputPin bl_switch(FEHIO::Pin9);
-        */
+    LEFT_F, 
 
-        // Declarations for analog optosensors
-        AnalogInputPin right_opto(FEHIO::Pin0);
-        AnalogInputPin middle_opto(FEHIO::Pin1);
-        AnalogInputPin left_opto(FEHIO::Pin2);
+    LEFT_R, 
 
-        //Calibrate the arm servo to get the min and max values for the servo. This only needs to be done once per servo, so you can comment this out after you get the values and set them with SetMin() and SetMax()
-        arm.TouchCalibrate();
+    RIGHT_F, 
 
-        //Set the min and max values for the servo so that it can function properly.
-        arm.SetMin(Servo_Min_Angle);
-        arm.SetMax(Servo_Max_Angle);
+    RIGHT_R 
 
-        //Initialize the screen
-        LCD.Clear(BLACK);
-        LCD.SetFontColor(WHITE);
+}; 
 
-        LCD.WriteLine("Analog Optosensor Testing");
-        LCD.WriteLine("Touch the screen");
-        while(!LCD.Touch(&x,&y)); //Wait for screen to be pressed
-        while(LCD.Touch(&x,&y)); //Wait for screen to be unpressed
+ 
 
-        /* Drive_Forward();
-        while(fr_switch.Value() == 1 && fl_switch.Value() == 1){ */
+//declare motor variables 
 
-        // Record values for optosensors on and off of the straight line
-        // Left Optosensor on straight line
+FEHMotor rightdrive(FEHMotor::Motor1,9.0); 
 
-        while(!LCD.Touch(&x,&y)); //Wait for screen to be pressed
-        while(LCD.Touch(&x,&y)); //Wait for screen to be unpressed
-        // Write the value returned by the optosensor to the screen
+FEHMotor leftdrive(FEHMotor::Motor0,9.0); 
 
-        int state = MIDDLE;
-        /* while(1) {
-            Drive_Forward();
-        } */
+FEHMotor frontdrive(FEHMotor::Motor0,9.0); 
 
-        /* while(1) {
-            float rightOptosensorValue = right_opto.Value();
-            float middleOptosensorValue = middle_opto.Value();
-            float leftOptosensorValue = left_opto.Value();
+ 
 
-            LCD.Write("Left Optosensor Value:");
-            LCD.WriteLine(leftOptosensorValue);
-            LCD.Write("Middle Optosensor Value:");
-            LCD.WriteLine(middleOptosensorValue);
-            LCD.Write("Right Optosensor Value:");
-            LCD.WriteLine(rightOptosensorValue);
+//Declaring Digital Encoders 
 
-            Sleep(0.5);
+DigitalEncoder left_encoder(FEHIO::Pin9); 
 
-        } */
+DigitalEncoder right_encoder(FEHIO::Pin8); 
 
+DigitalEncoder front_encoder(FEHIO::Pin8); 
 
-        //Working State machine for line following//
-       
-        /*
-        while(1) {
-            float rightOptosensorValue = right_opto.Value();
-            float middleOptosensorValue = middle_opto.Value();
-            float leftOptosensorValue = left_opto.Value();
+ 
 
-            switch(state) {
-                case MIDDLE:
-                    Drive_Forward();
+void Drive(Direction dir, int8_t speed, float distance); //takes input direction (see diagram), speed (in percent), and distance (inches) 
 
-                    if(rightOptosensorValue > 2.4) {
-                        state = RIGHT;
-                        LCD.WriteLine(state);
-                    }
-                    else if (leftOptosensorValue > 2.4) {
-                        state = LEFT;
-                        LCD.WriteLine(state);
-                    }
-                    break;
+void StopAll(); //stops the motion of all motors 
 
-                case RIGHT:
-                    leftdrive.SetPercent(25.);
-                    rightdrive.SetPercent(-10.);
+void Stop(FEHMotor motor); //stops the motion of a specific motor 
 
-                    if(rightOptosensorValue < 2.5) {
-                        state = MIDDLE;
-                        LCD.WriteLine(state);
-                    }
-                    break;
+ 
 
-                case LEFT:
-                    leftdrive.SetPercent(10.);
-                    rightdrive.SetPercent(-25.);
+void Turn_Right(); 
 
-                    if(leftOptosensorValue < 2.5) {
-                        state = MIDDLE;
-                        LCD.WriteLine(state);
-                    }
-                    break;
-             } 
+void Turn_Left(); 
 
-            Sleep(0.03);
+//void Course(); 
 
-             
-        } */
-       
-     } 
-    
-        
+ 
 
-        // Left Optosensor off straight line
-        /* LCD.Clear(BLACK);
-        LCD.WriteLine("Place left optosensor off straight line");
-        Sleep(0.25); // Wait to avoid double input
-        LCD.WriteLine("Touch screen to record value (2/12)");
-        while(!LCD.Touch(&x,&y)); //Wait for screen to be pressed
-        while(LCD.Touch(&x,&y)); //Wait for screen to be unpressed
-        // Write the value returned by the optosensor to the screen
-        // <ADD CODE HERE>
+void Drive(Direction dir, int8_t speed, float distance){ 
 
-        // Repeat process for remaining optosensors, and repeat all three for the curved line values
-        // <ADD CODE HERE>
+    //will eventually need a correction factor for momentum 
 
-        // Print end message to screen
-        LCD.Clear(BLACK);
-        LCD.WriteLine("Test Finished"); */
-    
+    switch (dir) 
+
+    { 
+
+    case FORWARD: 
+
+        //reset count 
+
+        left_encoder.ResetCounts(); 
+
+        right_encoder.ResetCounts(); 
+
+        //turn motor on to specified speed 
+
+        rightdrive.SetPercent(speed); 
+
+        leftdrive.SetPercent(speed); 
+
+        //wait until distance has been driven 
+
+        while(left_encoder.Counts() < (distance*L_ENCODE_P_IN) || right_encoder.Counts() < (distance*R_ENCODE_P_IN)); 
+
+        //stop all motors (can eventually be changed for correct motors but im lazy rn) 
+
+        StopAll(); 
+
+        break; 
+
+     
+
+    case REVERSE: 
+
+        left_encoder.ResetCounts(); 
+
+        right_encoder.ResetCounts(); 
+
+        rightdrive.SetPercent((-1)*speed); 
+
+        leftdrive.SetPercent((-1)*speed); 
+
+        while(left_encoder.Counts() < (distance*L_ENCODE_P_IN) || right_encoder.Counts() < (distance*R_ENCODE_P_IN)); 
+
+        StopAll(); 
+
+        break; 
+
+     
+
+    case LEFT_F: 
+
+        front_encoder.ResetCounts(); 
+
+        left_encoder.ResetCounts(); 
+
+        frontdrive.SetPercent(speed); 
+
+        leftdrive.SetPercent(speed); 
+
+        while(left_encoder.Counts() < (distance*L_ENCODE_P_IN) || front_encoder.Counts() < (distance*F_ENCODE_P_IN)); 
+
+        StopAll(); 
+
+        break; 
+
+     
+
+    case LEFT_R: 
+
+        front_encoder.ResetCounts(); 
+
+        left_encoder.ResetCounts(); 
+
+        frontdrive.SetPercent((-1)*speed); 
+
+        leftdrive.SetPercent((-1)*speed); 
+
+        while(left_encoder.Counts() < (distance*L_ENCODE_P_IN) || front_encoder.Counts() < (distance*F_ENCODE_P_IN)); 
+
+        StopAll(); 
+
+        break; 
+
+     
+
+    case RIGHT_F: 
+
+        front_encoder.ResetCounts(); 
+
+        right_encoder.ResetCounts(); 
+
+        rightdrive.SetPercent(speed); 
+
+        frontdrive.SetPercent(speed); 
+
+        while(front_encoder.Counts() < (distance*F_ENCODE_P_IN) || right_encoder.Counts() < (distance*R_ENCODE_P_IN)); 
+
+        StopAll(); 
+
+        break; 
+
+     
+
+    case RIGHT_R: 
+
+        front_encoder.ResetCounts(); 
+
+        right_encoder.ResetCounts(); 
+
+        rightdrive.SetPercent((-1)*speed); 
+
+        frontdrive.SetPercent((-1)*speed); 
+
+        while(front_encoder.Counts() < (distance*F_ENCODE_P_IN) || right_encoder.Counts() < (distance*R_ENCODE_P_IN)); 
+
+        StopAll(); 
+
+        break; 
+
+     
+
+    default: 
+
+    LCD.WriteLine("Direction not specidified during drive function"); 
+
+        break; 
+
+    } 
+
+} 
+
+ 
+
+void Turn_Left(){ 
+
+    rightdrive.SetPercent(-15.); 
+
+    leftdrive.SetPercent(15.); 
+
+    Sleep(2.0); 
+
+    Stop(leftdrive); 
+    Stop(rightdrive); 
+
+    return; 
+
+} 
+
+ 
+
+void Turn_Right(){ 
+
+    rightdrive.SetPercent(15.); 
+
+    leftdrive.SetPercent(-15.); 
+
+    Sleep(2.0); 
+
+    Stop(leftdrive);
+    Stop(rightdrive); 
+
+    return; 
+
+} 
+
+ 
+
+void Stop(FEHMotor motor){ 
+
+    motor.SetPercent(0.); 
+
+    return; 
+
+} 
+
+ 
+
+void StopAll(){ 
+
+    rightdrive.SetPercent(0.); 
+
+    leftdrive.SetPercent(0.); 
+
+    frontdrive.SetPercent(0.); 
+
+    return; 
+
+} 
+
+ 
+
+/*void Course(){ 
+
+//567 
+
+    //Reseting encoder counts 
+
+    left_encoder.ResetCounts(); 
+
+    right_encoder.ResetCounts(); 
+
+ 
+
+    //Sets motors to 25% power 
+
+    leftdrive.SetPercent(25.0); 
+
+    rightdrive.SetPercent(25.0); 
+
+ 
+
+    //Wait until encoder reaches 567 counts 
+
+    while(left_encoder.Counts() < 567); 
+
+ 
+
+    Stop(); 
+
+ 
+
+    Sleep(1.0); 
+
+ 
+
+    Turn_Left(); 
+
+ 
+
+    Sleep(1.0); 
+
+ 
+
+    //Reseting encoder counts 
+
+    left_encoder.ResetCounts(); 
+
+    right_encoder.ResetCounts(); 
+
+ 
+
+    //Sets motors to 25% power 
+
+    leftdrive.SetPercent(25.0); 
+
+    rightdrive.SetPercent(25.0); 
+
+ 
+
+    //Wait until encoder reaches 405 counts 
+
+    while(left_encoder.Counts() < 405); 
+
+ 
+
+    Stop(); 
+
+ 
+
+    Sleep(1.0); 
+
+ 
+
+    Turn_Right(); 
+
+ 
+
+    Sleep(1.0); 
+
+ 
+
+    //Reseting encoder counts 
+
+    left_encoder.ResetCounts(); 
+
+    right_encoder.ResetCounts(); 
+
+ 
+
+    //Sets motors to 25% power 
+
+    leftdrive.SetPercent(25.0); 
+
+    rightdrive.SetPercent(25.0); 
+
+ 
+
+    //Wait until encoder reaches 162 counts 
+
+    while(left_encoder.Counts() < 162); 
+
+ 
+
+    Stop(); 
+
+ 
+
+    return; 
+
+}*/ 
+
+ 
+
+void ERCMain() 
+
+{ 
+
+    int x, y; 
+
+    while(!LCD.Touch(&x, &y)); 
+
+} 
