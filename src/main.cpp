@@ -10,9 +10,9 @@
 // FEHMotor leftMotor(FEHMotor::Motor0, 6.0);
 // FEHServo servo(FEHServo::Servo0);
 
-FEHMotor frontdrive(FEHMotor::Motor2,9.0); 
+FEHMotor frontdrive(FEHMotor::Motor0,9.0); 
 FEHMotor rightdrive(FEHMotor::Motor1,9.0);
-FEHMotor leftdrive(FEHMotor::Motor0,9.0);
+FEHMotor leftdrive(FEHMotor::Motor2,9.0);
 
 DigitalEncoder left_encoder(FEHIO::Pin9); 
 DigitalEncoder right_encoder(FEHIO::Pin8); 
@@ -20,12 +20,16 @@ DigitalEncoder front_encoder(FEHIO::Pin8);
 
 AnalogInputPin CdS_cell(FEHIO::Pin3);
 
-void Drive(Direction dir, int8_t speed, float distance); //takes input direction (see diagram), speed (in percent), and distance (inches) 
+// void Drive(Direction dir, int8_t speed, float distance); //takes input direction (see diagram), speed (in percent), and distance (inches) 
 void StopAll(); //stops the motion of all motors 
 void Stop(FEHMotor motor); //stops the motion of a specific motor 
 void Turn_Right(); 
 void Turn_Left(); 
 void startButton();
+void simpleDrive(int speed, float time);
+void simpleReverse(int speed, float time);
+void startButton();
+void humidifier();
 
 /* void Drive_Forward();
 void Drive_Back();
@@ -49,25 +53,27 @@ enum Direction{
 
 
 #define START_LIGHT 1
-void startButton() {
+/* void startButton() {
     float startTime = TimeNow();
+    float currentTime = 0;
     float startCondition = 0;
+    float lightReading();
 
-    while(startTime < 10) {
+    while(currentTime < 10) {
         float lightReading = CdS_cell.Value();
 
         if(lightReading < START_LIGHT) {
             Drive(REVERSE, 0.25, 5);
             startCondition = 1;
         }
-        startTime = TimeNow();
+        currentTime = startTime - TimeNow();
     }
 
     if(startCondition == 0) {
         Drive(REVERSE, 0.25, 5);
         startCondition = 1;
     }
-}
+} */
 
 void Drive(Direction dir, int8_t speed, float distance){ 
 
@@ -145,23 +151,23 @@ void Drive(Direction dir, int8_t speed, float distance){
     } 
 } 
 
-void Turn_Left(){ 
+/* void Turn_Left(){ 
     rightdrive.SetPercent(-15.); 
     leftdrive.SetPercent(15.); 
     Sleep(2.0); 
-    Stop(rightdrive);
-    Stop(leftdrive); 
+    Stop(); 
     return; 
-} 
+} */
 
-void Turn_Right(){ 
+ 
+
+/* void Turn_Right(){ 
     rightdrive.SetPercent(15.); 
     leftdrive.SetPercent(-15.); 
     Sleep(2.0); 
-    Stop(rightdrive);
-    Stop(leftdrive); 
+    Stop(); 
     return; 
-} 
+} */
 
  
 
@@ -179,6 +185,172 @@ void StopAll(){
     return; 
 } 
 
+void simpleDrive(float speed, float time) {
+    float currentTime = TimeNow();
+
+    while(currentTime < time) {
+        rightdrive.SetPercent(speed); 
+        leftdrive.SetPercent(speed);
+    }
+
+    StopAll();
+}
+
+void simpleReverse(float speed, float time) {
+    float currentTime = TimeNow();
+
+    while(currentTime < time) {
+        rightdrive.SetPercent(-speed); 
+        leftdrive.SetPercent(-speed);
+
+        currentTime = TimeNow();
+    }
+
+    StopAll();
+}
+
+
+#define RED_LIGHT
+#define BLUE_LIGHT
+
+/* void humidifier() {
+    float startTime = TimeNow();
+    float condition = 0
+    float lightReading;
+    while(startTime < 3 & condition == 0) {
+        lightReading = CdS_Cell.Value();
+
+        if(lightReading < RED_LIGHT) {
+            Drive(RIGHT_R, 0.1, 2);
+            Drive(FORWARD, 0.1, 3);
+            condition = 1;
+        }
+
+        else if (lightReading < RED_LIGHT && lightReading > BLUE_LIGHT && condition == 0) {
+            Drive(LEFT_F, 0.1, 2);
+            Drive(Forward, 0.1, 3);
+            condition = 1; 
+        }
+        startTime = TimeNow();
+    }
+
+    if(condition == 0) {
+        Drive(RIGHT_R, 0.1, 2);
+        Drive(FORWARD, 0.1, 3);
+        condition = 1;
+    }
+} */
+
+/*void Course(){ 
+
+//567 
+
+    //Reseting encoder counts 
+
+    left_encoder.ResetCounts(); 
+
+    right_encoder.ResetCounts(); 
+
+ 
+
+    //Sets motors to 25% power 
+
+    leftdrive.SetPercent(25.0); 
+
+    rightdrive.SetPercent(25.0); 
+
+ 
+
+    //Wait until encoder reaches 567 counts 
+
+    while(left_encoder.Counts() < 567); 
+
+ 
+
+    Stop(); 
+
+ 
+
+    Sleep(1.0); 
+
+ 
+
+    Turn_Left(); 
+
+ 
+
+    Sleep(1.0); 
+
+ 
+
+    //Reseting encoder counts 
+
+    left_encoder.ResetCounts(); 
+
+    right_encoder.ResetCounts(); 
+
+ 
+
+    //Sets motors to 25% power 
+
+    leftdrive.SetPercent(25.0); 
+
+    rightdrive.SetPercent(25.0); 
+
+ 
+
+    //Wait until encoder reaches 405 counts 
+
+    while(left_encoder.Counts() < 405); 
+
+ 
+
+    Stop(); 
+
+ 
+
+    Sleep(1.0); 
+
+ 
+
+    Turn_Right(); 
+
+ 
+
+    Sleep(1.0); 
+
+ 
+
+    //Reseting encoder counts 
+
+    left_encoder.ResetCounts(); 
+
+    right_encoder.ResetCounts(); 
+
+ 
+
+    //Sets motors to 25% power 
+
+    leftdrive.SetPercent(25.0); 
+
+    rightdrive.SetPercent(25.0); 
+
+ 
+
+    //Wait until encoder reaches 162 counts 
+
+    while(left_encoder.Counts() < 162); 
+
+ 
+
+    Stop(); 
+
+ 
+
+    return; 
+
+}*/ 
+
 
     enum LineStates {
         MIDDLE,
@@ -191,7 +363,7 @@ void StopAll(){
     {
         int x, y; //for touch screen
 
-        DigitalInputPin fr_switch(FEHIO::Pin6);
+        /* DigitalInputPin fr_switch(FEHIO::Pin6);
         DigitalInputPin fl_switch(FEHIO::Pin7);
         DigitalInputPin br_switch(FEHIO::Pin8);
         DigitalInputPin bl_switch(FEHIO::Pin9);
@@ -199,7 +371,7 @@ void StopAll(){
         // Declarations for analog optosensors
         AnalogInputPin right_opto(FEHIO::Pin0);
         AnalogInputPin middle_opto(FEHIO::Pin1);
-        AnalogInputPin left_opto(FEHIO::Pin2);
+        AnalogInputPin left_opto(FEHIO::Pin2); */
 
     
 
@@ -207,10 +379,10 @@ void StopAll(){
         LCD.Clear(BLACK);
         LCD.SetFontColor(WHITE);
 
-        LCD.WriteLine("Analog Optosensor Testing");
-        LCD.WriteLine("Touch the screen");
-        while(!LCD.Touch(&x,&y)); //Wait for screen to be pressed
-        while(LCD.Touch(&x,&y)); //Wait for screen to be unpressed
+        // LCD.WriteLine("Analog Optosensor Testing");
+        // LCD.WriteLine("Touch the screen");
+        // while(!LCD.Touch(&x,&y)); //Wait for screen to be pressed
+        // while(LCD.Touch(&x,&y)); //Wait for screen to be unpressed
 
         /* Drive_Forward();
         while(fr_switch.Value() == 1 && fl_switch.Value() == 1){ */
@@ -218,11 +390,11 @@ void StopAll(){
         // Record values for optosensors on and off of the straight line
         // Left Optosensor on straight line
 
-        while(!LCD.Touch(&x,&y)); //Wait for screen to be pressed
-        while(LCD.Touch(&x,&y)); //Wait for screen to be unpressed
+        //while(!LCD.Touch(&x,&y)); //Wait for screen to be pressed
+        // while(LCD.Touch(&x,&y)); //Wait for screen to be unpressed
         // Write the value returned by the optosensor to the screen
 
-        int state = MIDDLE;
+        /* int state = MIDDLE;
 
         while(1) {
             float rightOptosensorValue = right_opto.Value();
@@ -231,7 +403,7 @@ void StopAll(){
 
             switch(state) {
                 case MIDDLE:
-                    Drive(12, FORWARD, 25);
+                    Drive_Forward();
 
                     if(rightOptosensorValue > 2.4) {
                         state = RIGHT;
@@ -243,7 +415,7 @@ void StopAll(){
                     }
                     break;
 
-                case RIGHT: 
+                case RIGHT:
                     leftdrive.SetPercent(25.);
                     rightdrive.SetPercent(-10.);
 
@@ -267,10 +439,17 @@ void StopAll(){
                     leftdrive.Stop();
                     rightdrive.Stop();
                     break; */
-             } 
+             //} 
 
-            Sleep(0.03);
+            // Sleep(0.03); 
 
 
-        } 
+        // } 
+
+        simpleDrive(20., 5);
+        // Sleep(1);
+        // simpleReverse(20, 5);
+
+
      } 
+    
