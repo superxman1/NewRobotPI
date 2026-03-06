@@ -14,6 +14,17 @@
 
 // FEHServo servo(FEHServo::Servo0); 
 
+//Pivot Constants
+#define Apple_Pickup_ANGLE 90
+#define Apple_Dropoff_ANGLE 0
+#define Window_ANGLE 45
+#define Lever_Down_ANGLE 90
+#define Lever_Up_ANGLE 0
+#define Servo_Max_Angle 180
+#define Servo_Min_Angle 0
+
+//Compost Mechanism Constants
+#define Compost_Speed 25.0
  
 
 //after testing we will change these values to their correct encodings per inch, but just placeholders for now 
@@ -54,7 +65,10 @@ FEHMotor leftdrive(FEHMotor::Motor0,9.0);
 
 FEHMotor frontdrive(FEHMotor::Motor0,9.0); 
 
- 
+FEHMotor compost(FEHMotor::Motor2,5.0);
+
+FEHServo arm(FEHServo::Servo0);
+
 
 //Declaring Digital Encoders 
 
@@ -78,9 +92,25 @@ void Turn_Right();
 
 void Turn_Left(); 
 
+//Pivot funtions
+void Pivot_Set_Angle(int degree);
+//Compost mechanism functions
+void Compost_Set_Speed(float percent);
+
 //void Course(); 
 
  
+//Pivot functions
+void Pivot_Set_Angle(int degree){
+    arm.SetDegree(degree);
+    return;
+}
+
+//Compost mechanism functions
+void Compost_Set_Speed(float percent){
+    compost.SetPercent(percent);
+    return;
+}
 
 void Drive(Direction dir, int8_t speed, float distance){ 
 
