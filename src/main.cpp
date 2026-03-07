@@ -1,6 +1,7 @@
 #include <FEH.h> 
 
 #include <Arduino.h> 
+#include <math.h>
 
  
 
@@ -37,13 +38,17 @@
 
  
 
-//each of the 6 directions possible from any one point (see diagram for greater detail) 
+//8 movement directions (cardinal + diagonals)
 
 enum Direction{ 
 
     FORWARD, 
 
     REVERSE, 
+
+    LEFT,
+
+    RIGHT,
 
     LEFT_F, 
 
@@ -114,139 +119,81 @@ void Compost_Set_Speed(float percent){
 
 void Drive(Direction dir, int8_t speed, float distance){ 
 
-    //will eventually need a correction factor for momentum 
-
-    switch (dir) 
-
-    { 
-
-    case FORWARD: 
-
-        //reset count 
-
-        left_encoder.ResetCounts(); 
-
-        right_encoder.ResetCounts(); 
-
-        //turn motor on to specified speed 
-
-        rightdrive.SetPercent(speed); 
-
-        leftdrive.SetPercent(speed); 
-
-        //wait until distance has been driven 
-
-        while(left_encoder.Counts() < (distance*L_ENCODE_P_IN) || right_encoder.Counts() < (distance*R_ENCODE_P_IN)); 
-
-        //stop all motors (can eventually be changed for correct motors but im lazy rn) 
-
-        StopAll(); 
-
-        break; 
-
-     
-
-    case REVERSE: 
-
-        left_encoder.ResetCounts(); 
-
-        right_encoder.ResetCounts(); 
-
-        rightdrive.SetPercent((-1)*speed); 
-
-        leftdrive.SetPercent((-1)*speed); 
-
-        while(left_encoder.Counts() < (distance*L_ENCODE_P_IN) || right_encoder.Counts() < (distance*R_ENCODE_P_IN)); 
-
-        StopAll(); 
-
-        break; 
-
-     
-
-    case LEFT_F: 
-
-        front_encoder.ResetCounts(); 
-
-        left_encoder.ResetCounts(); 
-
-        frontdrive.SetPercent(speed); 
-
-        leftdrive.SetPercent(speed); 
-
-        while(left_encoder.Counts() < (distance*L_ENCODE_P_IN) || front_encoder.Counts() < (distance*F_ENCODE_P_IN)); 
-
-        StopAll(); 
-
-        break; 
-
-     
-
-    case LEFT_R: 
-
-        front_encoder.ResetCounts(); 
-
-        left_encoder.ResetCounts(); 
-
-        frontdrive.SetPercent((-1)*speed); 
-
-        leftdrive.SetPercent((-1)*speed); 
-
-        while(left_encoder.Counts() < (distance*L_ENCODE_P_IN) || front_encoder.Counts() < (distance*F_ENCODE_P_IN)); 
-
-        StopAll(); 
-
-        break; 
-
-     
-
-    case RIGHT_F: 
-
-        front_encoder.ResetCounts(); 
-
-        right_encoder.ResetCounts(); 
-
-        rightdrive.SetPercent(speed); 
-
-        frontdrive.SetPercent(speed); 
-
-        while(front_encoder.Counts() < (distance*F_ENCODE_P_IN) || right_encoder.Counts() < (distance*R_ENCODE_P_IN)); 
-
-        StopAll(); 
-
-        break; 
-
-     
-
-    case RIGHT_R: 
-
-        front_encoder.ResetCounts(); 
-
-        right_encoder.ResetCounts(); 
-
-        rightdrive.SetPercent((-1)*speed); 
-
-        frontdrive.SetPercent((-1)*speed); 
-
-        while(front_encoder.Counts() < (distance*F_ENCODE_P_IN) || right_encoder.Counts() < (distance*R_ENCODE_P_IN)); 
-
-        StopAll(); 
-
-        break; 
-
-     
-
-    default: 
-
-    LCD.WriteLine("Direction not specidified during drive function"); 
-
-        break; 
-
-    } 
-
+    // Robot motion commands
+    float Vx = 0.0;    // forward (+forward, -back)
+    float Vy = 0.0;    // left (+left, -right)
+    float omega = 0.0; // rotation (+CCW, -CW)
+
+    switch (dir)
+    {
+    case FORWARD:
+        Vx = (float)speed;
+        break;
+
+    case REVERSE:
+        Vx = (float)(-speed);
+        break;
+
+    case LEFT:
+        Vy = (float)speed;
+        break;
+
+    case RIGHT:
+        Vy = (float)(-speed);
+        break;
+
+    case LEFT_F:
+        Vx = (float)speed;
+        Vy = (float)speed;
+        break;
+
+    case LEFT_R:
+        Vx = (float)(-speed);
+        Vy = (float)speed;
+        break;
+
+    case RIGHT_F:
+        Vx = (float)speed;
+        Vy = (float)(-speed);
+        break;
+
+    case RIGHT_R:
+        Vx = (float)(-speed);
+        Vy = (float)(-speed);
+        break;
+
+    default:
+        LCD.WriteLine("Direction not specified during drive function");
+        return;
+    }
+
+    // Kiwi drive wheel speeds
+    float wheel1 = Vx + omega;
+    float wheel2 = -0.5f * Vx + 0.8660254f * Vy + omega;
+    float wheel3 = -0.5f * Vx - 0.8660254f * Vy + omega;
+
+    // Keep wheel output in [-100, 100] while preserving direction ratios.
+    float maxMag = fmaxf(fabsf(wheel1), fmaxf(fabsf(wheel2), fabsf(wheel3)));
+    if(maxMag > 100.0f){
+        float scale = 100.0f / maxMag;
+        wheel1 *= scale;
+        wheel2 *= scale;
+        wheel3 *= scale;
+    }
+
+    left_encoder.ResetCounts();
+    right_encoder.ResetCounts();
+    front_encoder.ResetCounts();
+
+    rightdrive.SetPercent(wheel1);
+    leftdrive.SetPercent(wheel2);
+    frontdrive.SetPercent(wheel3);
+
+    float avg_target_counts = distance * ((L_ENCODE_P_IN + R_ENCODE_P_IN + F_ENCODE_P_IN) / 3.0f);
+    while(((left_encoder.Counts() + right_encoder.Counts() + front_encoder.Counts()) / 3.0f) < avg_target_counts);
+
+    StopAll();
 } 
-
- 
 
 void Turn_Left(){ 
 
@@ -427,3 +374,4 @@ void ERCMain()
     while(!LCD.Touch(&x, &y)); 
 
 } 
+
