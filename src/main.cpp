@@ -170,6 +170,7 @@ static void Turn_By_Encoder(bool turn_left, double angle_deg, int8_t speed){
     if(angle_deg <= 0.0 || speed == 0){
         Stop(leftdrive);
         Stop(rightdrive);
+        Stop(frontdrive);
         return;
     }
 
@@ -177,22 +178,26 @@ static void Turn_By_Encoder(bool turn_left, double angle_deg, int8_t speed){
 
     left_encoder.ResetCounts();
     right_encoder.ResetCounts();
+    front_encoder.ResetCounts();
 
     if(turn_left){
         rightdrive.SetPercent(-turn_speed);
         leftdrive.SetPercent(turn_speed);
+        frontdrive.SetPercent(turn_speed);
     } else {
         rightdrive.SetPercent(turn_speed);
         leftdrive.SetPercent(-turn_speed);
+        frontdrive.SetPercent(-turn_speed);
     }
 
     double target_counts = angle_deg * TURN_COUNTS_PER_DEG;
-    while((((double)left_encoder.Counts() + (double)right_encoder.Counts()) / 2.0) < target_counts){
+    while((((double)left_encoder.Counts() + (double)right_encoder.Counts() + (double)front_encoder.Counts()) / 3.0) < target_counts){
         Sleep(0.005);
     }
 
     Stop(leftdrive);
     Stop(rightdrive);
+    Stop(frontdrive);
 }
 
 void Turn_Left(double angle_deg, int8_t speed){
