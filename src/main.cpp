@@ -1,19 +1,14 @@
-#include <FEH.h> 
+#include <FEH.h>
 
-#include <Arduino.h> 
+#include <Arduino.h>
 #include <math.h>
 
- 
+//Hello
 
-//Hello 
-
-// Declare things like Motors, Servos, etc. here 
-
-// For example: 
-
-// FEHMotor leftMotor(FEHMotor::Motor0, 6.0); 
-
-// FEHServo servo(FEHServo::Servo0); 
+// Declare things like Motors, Servos, etc. here
+// For example:
+// FEHMotor leftMotor(FEHMotor::Motor0, 6.0);
+// FEHServo servo(FEHServo::Servo0);
 
 //Pivot Constants
 #define Apple_Pickup_ANGLE 90
@@ -26,85 +21,59 @@
 
 //Compost Mechanism Constants
 #define Compost_Speed 25.0
- 
 
-//after testing we will change these values to their correct encodings per inch, but just placeholders for now 
+//after testing we will change these values to their correct encodings per inch, but just placeholders for now
+#define R_ENCODE_P_IN 1
+#define L_ENCODE_P_IN 1
+#define F_ENCODE_P_IN 1
 
-#define R_ENCODE_P_IN 1 
-
-#define L_ENCODE_P_IN 1 
-
-#define F_ENCODE_P_IN 1 
-
- 
+// Encoder counts needed per degree of robot rotation.
+// Tune this value on your robot so angle turns are accurate.
+#define TURN_COUNTS_PER_DEG 1.0
 
 //8 movement directions (cardinal + diagonals)
-
-enum Direction{ 
-
-    FORWARD, 
-
-    REVERSE, 
-
+enum Direction{
+    FORWARD,
+    REVERSE,
     LEFT,
-
     RIGHT,
+    LEFT_F,
+    LEFT_R,
+    RIGHT_F,
+    RIGHT_R
+};
 
-    LEFT_F, 
-
-    LEFT_R, 
-
-    RIGHT_F, 
-
-    RIGHT_R 
-
-}; 
-
- 
-
-//declare motor variables 
-
-FEHMotor rightdrive(FEHMotor::Motor1,9.0); 
-
-FEHMotor leftdrive(FEHMotor::Motor0,9.0); 
-
-FEHMotor frontdrive(FEHMotor::Motor0,9.0); 
-
+//declare motor variables
+FEHMotor rightdrive(FEHMotor::Motor1,9.0);
+FEHMotor leftdrive(FEHMotor::Motor0,9.0);
+FEHMotor frontdrive(FEHMotor::Motor0,9.0);
 FEHMotor compost(FEHMotor::Motor2,5.0);
 
 FEHServo arm(FEHServo::Servo0);
 
+//Declaring Digital Encoders
+DigitalEncoder left_encoder(FEHIO::Pin9);
+DigitalEncoder right_encoder(FEHIO::Pin8);
+DigitalEncoder front_encoder(FEHIO::Pin8);
 
-//Declaring Digital Encoders 
+void Drive(Direction dir, int8_t speed, double distance); //takes input direction (see diagram), speed (in percent), and distance (inches)
 
-DigitalEncoder left_encoder(FEHIO::Pin9); 
+void StopAll(); //stops the motion of all motors
 
-DigitalEncoder right_encoder(FEHIO::Pin8); 
+void Stop(FEHMotor &motor); //stops the motion of a specific motor
 
-DigitalEncoder front_encoder(FEHIO::Pin8); 
-
- 
-
-void Drive(Direction dir, int8_t speed, float distance); //takes input direction (see diagram), speed (in percent), and distance (inches) 
-
-void StopAll(); //stops the motion of all motors 
-
-void Stop(FEHMotor motor); //stops the motion of a specific motor 
-
- 
-
-void Turn_Right(); 
-
-void Turn_Left(); 
+void Turn_Right(double angle_deg, int8_t speed);
+void Turn_Left(double angle_deg, int8_t speed);
+void Turn_Right();
+void Turn_Left();
 
 //Pivot funtions
 void Pivot_Set_Angle(int degree);
 //Compost mechanism functions
-void Compost_Set_Speed(float percent);
+void Compost_Set_Speed(double percent);
 
-//void Course(); 
+//void Course();
 
- 
 //Pivot functions
 void Pivot_Set_Angle(int degree){
     arm.SetDegree(degree);
@@ -112,54 +81,54 @@ void Pivot_Set_Angle(int degree){
 }
 
 //Compost mechanism functions
-void Compost_Set_Speed(float percent){
+void Compost_Set_Speed(double percent){
     compost.SetPercent(percent);
     return;
 }
 
-void Drive(Direction dir, int8_t speed, float distance){ 
+void Drive(Direction dir, int8_t speed, double distance){
 
     // Robot motion commands
-    float Vx = 0.0;    // forward (+forward, -back)
-    float Vy = 0.0;    // left (+left, -right)
-    float omega = 0.0; // rotation (+CCW, -CW)
+    double Vx = 0.0;    // forward (+forward, -back)
+    double Vy = 0.0;    // left (+left, -right)
+    double omega = 0.0; // rotation (+CCW, -CW)
 
     switch (dir)
     {
     case FORWARD:
-        Vx = (float)speed;
+        Vx = static_cast<double>(speed);
         break;
 
     case REVERSE:
-        Vx = (float)(-speed);
+        Vx = static_cast<double>(-speed);
         break;
 
     case LEFT:
-        Vy = (float)speed;
+        Vy = static_cast<double>(speed);
         break;
 
     case RIGHT:
-        Vy = (float)(-speed);
+        Vy = static_cast<double>(-speed);
         break;
 
     case LEFT_F:
-        Vx = (float)speed;
-        Vy = (float)speed;
+        Vx = static_cast<double>(speed);
+        Vy = static_cast<double>(speed);
         break;
 
     case LEFT_R:
-        Vx = (float)(-speed);
-        Vy = (float)speed;
+        Vx = static_cast<double>(-speed);
+        Vy = static_cast<double>(speed);
         break;
 
     case RIGHT_F:
-        Vx = (float)speed;
-        Vy = (float)(-speed);
+        Vx = static_cast<double>(speed);
+        Vy = static_cast<double>(-speed);
         break;
 
     case RIGHT_R:
-        Vx = (float)(-speed);
-        Vy = (float)(-speed);
+        Vx = static_cast<double>(-speed);
+        Vy = static_cast<double>(-speed);
         break;
 
     default:
@@ -168,14 +137,14 @@ void Drive(Direction dir, int8_t speed, float distance){
     }
 
     // Kiwi drive wheel speeds
-    float wheel1 = Vx + omega;
-    float wheel2 = -0.5f * Vx + 0.8660254f * Vy + omega;
-    float wheel3 = -0.5f * Vx - 0.8660254f * Vy + omega;
+    double wheel1 = Vx + omega;
+    double wheel2 = -0.5 * Vx + 0.8660254 * Vy + omega;
+    double wheel3 = -0.5 * Vx - 0.8660254 * Vy + omega;
 
     // Keep wheel output in [-100, 100] while preserving direction ratios.
-    float maxMag = fmaxf(fabsf(wheel1), fmaxf(fabsf(wheel2), fabsf(wheel3)));
-    if(maxMag > 100.0f){
-        float scale = 100.0f / maxMag;
+    double maxMag = fmax(fabs(wheel1), fmax(fabs(wheel2), fabs(wheel3)));
+    if(maxMag > 100.0){
+        double scale = 100.0 / maxMag;
         wheel1 *= scale;
         wheel2 *= scale;
         wheel3 *= scale;
@@ -189,189 +158,201 @@ void Drive(Direction dir, int8_t speed, float distance){
     leftdrive.SetPercent(wheel2);
     frontdrive.SetPercent(wheel3);
 
-    float avg_target_counts = distance * ((L_ENCODE_P_IN + R_ENCODE_P_IN + F_ENCODE_P_IN) / 3.0f);
-    while(((left_encoder.Counts() + right_encoder.Counts() + front_encoder.Counts()) / 3.0f) < avg_target_counts);
+    double avg_target_counts = distance * ((L_ENCODE_P_IN + R_ENCODE_P_IN + F_ENCODE_P_IN) / 3.0);
+    while(((left_encoder.Counts() + right_encoder.Counts() + front_encoder.Counts()) / 3.0) < avg_target_counts){
+        Sleep(0.005);
+    }
 
     StopAll();
-} 
+}
 
-void Turn_Left(){ 
+static void Turn_By_Encoder(bool turn_left, double angle_deg, int8_t speed){
+    if(angle_deg <= 0.0 || speed == 0){
+        Stop(leftdrive);
+        Stop(rightdrive);
+        return;
+    }
 
-    rightdrive.SetPercent(-15.); 
+    int8_t turn_speed = abs(speed);
 
-    leftdrive.SetPercent(15.); 
+    left_encoder.ResetCounts();
+    right_encoder.ResetCounts();
 
-    Sleep(2.0); 
+    if(turn_left){
+        rightdrive.SetPercent(-turn_speed);
+        leftdrive.SetPercent(turn_speed);
+    } else {
+        rightdrive.SetPercent(turn_speed);
+        leftdrive.SetPercent(-turn_speed);
+    }
 
-    Stop(leftdrive); 
-    Stop(rightdrive); 
-
-    return; 
-
-} 
-
- 
-
-void Turn_Right(){ 
-
-    rightdrive.SetPercent(15.); 
-
-    leftdrive.SetPercent(-15.); 
-
-    Sleep(2.0); 
+    double target_counts = angle_deg * TURN_COUNTS_PER_DEG;
+    while((((double)left_encoder.Counts() + (double)right_encoder.Counts()) / 2.0) < target_counts){
+        Sleep(0.005);
+    }
 
     Stop(leftdrive);
-    Stop(rightdrive); 
+    Stop(rightdrive);
+}
 
-    return; 
+void Turn_Left(double angle_deg, int8_t speed){
+    Turn_By_Encoder(true, angle_deg, speed);
+    return;
+}
 
-} 
+void Turn_Right(double angle_deg, int8_t speed){
+    Turn_By_Encoder(false, angle_deg, speed);
+    return;
+}
 
- 
+void Turn_Left(){
+    Turn_Left(90.0, 15);
+    return;
+}
 
-void Stop(FEHMotor motor){ 
+void Turn_Right(){
+    Turn_Right(90.0, 15);
+    return;
+}
 
-    motor.SetPercent(0.); 
+void Stop(FEHMotor &motor){
 
-    return; 
+    motor.SetPercent(0.0);
 
-} 
+    return;
 
- 
+}
 
-void StopAll(){ 
+void StopAll(){
 
-    rightdrive.SetPercent(0.); 
+    rightdrive.SetPercent(0.0);
 
-    leftdrive.SetPercent(0.); 
+    leftdrive.SetPercent(0.0);
 
-    frontdrive.SetPercent(0.); 
+    frontdrive.SetPercent(0.0);
 
-    return; 
+    return;
 
-} 
+}
 
- 
+/*void Course(){
 
-/*void Course(){ 
+//567
 
-//567 
+    //Reseting encoder counts
 
-    //Reseting encoder counts 
+    left_encoder.ResetCounts();
 
-    left_encoder.ResetCounts(); 
+    right_encoder.ResetCounts();
 
-    right_encoder.ResetCounts(); 
 
- 
 
-    //Sets motors to 25% power 
+    //Sets motors to 25% power
 
-    leftdrive.SetPercent(25.0); 
+    leftdrive.SetPercent(25.0);
 
-    rightdrive.SetPercent(25.0); 
+    rightdrive.SetPercent(25.0);
 
- 
 
-    //Wait until encoder reaches 567 counts 
 
-    while(left_encoder.Counts() < 567); 
+    //Wait until encoder reaches 567 counts
 
- 
+    while(left_encoder.Counts() < 567);
 
-    Stop(); 
 
- 
 
-    Sleep(1.0); 
+    Stop();
 
- 
 
-    Turn_Left(); 
 
- 
+    Sleep(1.0);
 
-    Sleep(1.0); 
 
- 
 
-    //Reseting encoder counts 
+    Turn_Left();
 
-    left_encoder.ResetCounts(); 
 
-    right_encoder.ResetCounts(); 
 
- 
+    Sleep(1.0);
 
-    //Sets motors to 25% power 
 
-    leftdrive.SetPercent(25.0); 
 
-    rightdrive.SetPercent(25.0); 
+    //Reseting encoder counts
 
- 
+    left_encoder.ResetCounts();
 
-    //Wait until encoder reaches 405 counts 
+    right_encoder.ResetCounts();
 
-    while(left_encoder.Counts() < 405); 
 
- 
 
-    Stop(); 
+    //Sets motors to 25% power
 
- 
+    leftdrive.SetPercent(25.0);
 
-    Sleep(1.0); 
+    rightdrive.SetPercent(25.0);
 
- 
 
-    Turn_Right(); 
 
- 
+    //Wait until encoder reaches 405 counts
 
-    Sleep(1.0); 
+    while(left_encoder.Counts() < 405);
 
- 
 
-    //Reseting encoder counts 
 
-    left_encoder.ResetCounts(); 
+    Stop();
 
-    right_encoder.ResetCounts(); 
 
- 
 
-    //Sets motors to 25% power 
+    Sleep(1.0);
 
-    leftdrive.SetPercent(25.0); 
 
-    rightdrive.SetPercent(25.0); 
 
- 
+    Turn_Right();
 
-    //Wait until encoder reaches 162 counts 
 
-    while(left_encoder.Counts() < 162); 
 
- 
+    Sleep(1.0);
 
-    Stop(); 
 
- 
 
-    return; 
+    //Reseting encoder counts
 
-}*/ 
+    left_encoder.ResetCounts();
 
- 
+    right_encoder.ResetCounts();
 
-void ERCMain() 
 
-{ 
 
-    int x, y; 
+    //Sets motors to 25% power
 
-    while(!LCD.Touch(&x, &y)); 
+    leftdrive.SetPercent(25.0);
 
-} 
+    rightdrive.SetPercent(25.0);
 
+
+
+    //Wait until encoder reaches 162 counts
+
+    while(left_encoder.Counts() < 162);
+
+
+
+    Stop();
+
+
+
+    return;
+
+}*/
+
+
+
+void ERCMain()
+
+{
+
+    int x, y;
+
+    while(!LCD.Touch(&x, &y));
+
+}
