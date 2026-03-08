@@ -30,9 +30,9 @@ FEHMotor frontdrive(FEHMotor::Motor0,9.0);
 FEHMotor rightdrive(FEHMotor::Motor1,9.0);
 FEHMotor leftdrive(FEHMotor::Motor2,9.0);
 
-DigitalEncoder left_encoder(FEHIO::Pin9); 
-DigitalEncoder right_encoder(FEHIO::Pin8); 
-DigitalEncoder front_encoder(FEHIO::Pin8);
+DigitalEncoder left_encoder(FEHIO::Pin8); 
+DigitalEncoder right_encoder(FEHIO::Pin9); 
+DigitalEncoder front_encoder(FEHIO::Pin10);
 
 FEHMotor compost(FEHMotor::Motor3,5.0);
 FEHServo arm(FEHServo::Servo0);
