@@ -1,3 +1,6 @@
+#include <FEHLCD.h>
+#include <FEHIO.h>
+#include <FEHSD.h>
 #include <FEH.h>
 
 #include <Arduino.h>
@@ -22,6 +25,36 @@
 //Compost Mechanism Constants
 #define Compost_Speed 25.0
 
+//Define Motors, Servos, and Sensors here
+FEHMotor frontdrive(FEHMotor::Motor0,9.0); 
+FEHMotor rightdrive(FEHMotor::Motor1,9.0);
+FEHMotor leftdrive(FEHMotor::Motor2,9.0);
+
+DigitalEncoder left_encoder(FEHIO::Pin9); 
+DigitalEncoder right_encoder(FEHIO::Pin8); 
+DigitalEncoder front_encoder(FEHIO::Pin8);
+
+FEHMotor compost(FEHMotor::Motor3,5.0);
+FEHServo arm(FEHServo::Servo0);
+
+AnalogInputPin CdS_cell(FEHIO::Pin3);
+
+// void Drive(Direction dir, int8_t speed, float distance); //takes input direction (see diagram), speed (in percent), and distance (inches) 
+void StopAll(); //stops the motion of all motors 
+void Turn_Right(); 
+void Turn_Left(); 
+void startButton();
+void simpleDrive(int speed, float time);
+void simpleReverse(int speed, float time);
+void startButton();
+void humidifier();
+
+/* void Drive_Forward();
+void Drive_Back();
+void Turn_Right();
+void Turn_Left();
+void Stop(); */
+
 //after testing we will change these values to their correct encodings per inch, but just placeholders for now
 #define R_ENCODE_P_IN 1
 #define L_ENCODE_P_IN 1
@@ -43,18 +76,10 @@ enum Direction{
     RIGHT_R
 };
 
-//declare motor variables
-FEHMotor rightdrive(FEHMotor::Motor1,9.0);
-FEHMotor leftdrive(FEHMotor::Motor0,9.0);
-FEHMotor frontdrive(FEHMotor::Motor0,9.0);
-FEHMotor compost(FEHMotor::Motor2,5.0);
 
-FEHServo arm(FEHServo::Servo0);
 
-//Declaring Digital Encoders
-DigitalEncoder left_encoder(FEHIO::Pin9);
-DigitalEncoder right_encoder(FEHIO::Pin8);
-DigitalEncoder front_encoder(FEHIO::Pin8);
+
+
 
 void Drive(Direction dir, int8_t speed, double distance); //takes input direction (see diagram), speed (in percent), and distance (inches)
 
@@ -85,6 +110,32 @@ void Compost_Set_Speed(double percent){
     compost.SetPercent(percent);
     return;
 }
+
+ 
+
+
+#define START_LIGHT 1
+/* void startButton() {
+    float startTime = TimeNow();
+    float currentTime = 0;
+    float startCondition = 0;
+    float lightReading();
+
+    while(currentTime < 10) {
+        float lightReading = CdS_cell.Value();
+
+        if(lightReading < START_LIGHT) {
+            Drive(REVERSE, 0.25, 5);
+            startCondition = 1;
+        }
+        currentTime = startTime - TimeNow();
+    }
+
+    if(startCondition == 0) {
+        Drive(REVERSE, 0.25, 5);
+        startCondition = 1;
+    }
+} */
 
 void Drive(Direction dir, int8_t speed, double distance){
 
@@ -240,6 +291,36 @@ void StopAll(){
 
 }
 
+
+/* void humidifier() {
+    float startTime = TimeNow();
+    float condition = 0
+    float lightReading;
+    while(startTime < 3 & condition == 0) {
+        lightReading = CdS_Cell.Value();
+
+        if(lightReading < RED_LIGHT) {
+            Drive(RIGHT_R, 0.1, 2);
+            Drive(FORWARD, 0.1, 3);
+            condition = 1;
+        }
+
+        else if (lightReading < RED_LIGHT && lightReading > BLUE_LIGHT && condition == 0) {
+            Drive(LEFT_F, 0.1, 2);
+            Drive(Forward, 0.1, 3);
+            condition = 1; 
+        }
+        startTime = TimeNow();
+    }
+
+    if(condition == 0) {
+        Drive(RIGHT_R, 0.1, 2);
+        Drive(FORWARD, 0.1, 3);
+        condition = 1;
+    }
+} */
+
+
 /*void Course(){
 
 //567
@@ -350,6 +431,12 @@ void StopAll(){
 
 }*/
 
+
+    enum LineStates {
+        MIDDLEOfLine,
+        RIGHTOfLine,
+        LEFTOfLine
+    };
 
 
 void ERCMain()
