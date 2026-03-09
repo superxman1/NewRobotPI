@@ -55,9 +55,9 @@ void Turn_Left();
 void Stop(); */
 
 //after testing we will change these values to their correct encodings per inch, but just placeholders for now
-#define R_ENCODE_P_IN 1
-#define L_ENCODE_P_IN 1
-#define F_ENCODE_P_IN 1
+#define R_ENCODE_P_IN (318/7.874)
+#define L_ENCODE_P_IN (318/7.874)
+#define F_ENCODE_P_IN (318/7.874)
 
 // Encoder counts needed per degree of robot rotation.
 // Tune this value on your robot so angle turns are accurate.
@@ -136,49 +136,64 @@ void Compost_Set_Speed(double percent){
     }
 } */
 
-void Drive(Direction dir, double speed, double distance){
+void Drive(Direction dir, double speed, double distance)
+{
+    // Commanded robot-frame direction unit vector
+    double ux = 0.0;
+    double uy = 0.0;
 
-    // Robot motion commands
-    double Vx = 0.0;    // forward (+forward, -back)
-    double Vy = 0.0;    // left (+left, -right)
-    double omega = 0.0; // rotation (+CCW, -CW)
+    // Motor command components
+    double Vx = 0.0;
+    double Vy = 0.0;
+    double omega = 0.0;
+
+    const double INV_SQRT2 = 0.70710678;
+    const double SQRT3 = 1.73205081;
 
     switch (dir)
     {
     case FORWARD:
+        ux = 1.0;  uy = 0.0;
         Vx = speed;
         break;
 
     case REVERSE:
+        ux = -1.0; uy = 0.0;
         Vx = -speed;
         break;
 
     case LEFT:
+        ux = 0.0;  uy = 1.0;
         Vy = speed;
         break;
 
     case RIGHT:
+        ux = 0.0;  uy = -1.0;
         Vy = -speed;
         break;
 
     case LEFT_F:
-        Vx = speed;
-        Vy = speed;
+        ux = INV_SQRT2;  uy = INV_SQRT2;
+        Vx = speed * INV_SQRT2;
+        Vy = speed * INV_SQRT2;
         break;
 
     case LEFT_R:
-        Vx = -speed;
-        Vy = speed;
+        ux = -INV_SQRT2; uy = INV_SQRT2;
+        Vx = -speed * INV_SQRT2;
+        Vy =  speed * INV_SQRT2;
         break;
 
     case RIGHT_F:
-        Vx = speed;
-        Vy = -speed;
+        ux = INV_SQRT2;  uy = -INV_SQRT2;
+        Vx =  speed * INV_SQRT2;
+        Vy = -speed * INV_SQRT2;
         break;
 
     case RIGHT_R:
-        Vx = -speed;
-        Vy = -speed;
+        ux = -INV_SQRT2; uy = -INV_SQRT2;
+        Vx = -speed * INV_SQRT2;
+        Vy = -speed * INV_SQRT2;
         break;
 
     default:
@@ -186,33 +201,163 @@ void Drive(Direction dir, double speed, double distance){
         return;
     }
 
-    // Kiwi drive wheel speeds
+    // Kiwi drive forward kinematics: body command -> wheel commands
     double wheel1 = Vx + omega;
     double wheel2 = -0.5 * Vx + 0.8660254 * Vy + omega;
     double wheel3 = -0.5 * Vx - 0.8660254 * Vy + omega;
 
-    // Keep wheel output in [-100, 100] while preserving direction ratios.
-    double maxMag = fmax(fabs(wheel1), fmax(fabs(wheel2), fabs(wheel3)));
-    if(maxMag > 100.0){
-        double scale = 100.0 / maxMag;
-        wheel1 *= scale;
-        wheel2 *= scale;
-        wheel3 *= scale;
-    }
+    // Reset encoders
+    right_encoder.ResetCounts(); // wheel1
+    left_encoder.ResetCounts();  // wheel2
+    front_encoder.ResetCounts(); // wheel3
 
-    left_encoder.ResetCounts();
-    right_encoder.ResetCounts();
-    front_encoder.ResetCounts();
-
+    // Start motors
     rightdrive.SetPercent(wheel1);
     leftdrive.SetPercent(wheel2);
     frontdrive.SetPercent(wheel3);
 
-    double target_counts = distance * ((fabs(L_ENCODE_P_IN) + fabs(R_ENCODE_P_IN) + fabs(F_ENCODE_P_IN)));
-    while(((left_encoder.Counts() + right_encoder.Counts() + front_encoder.Counts())) < target_counts){
+    while (true)
+    {
+        // Convert signed encoder counts -> signed wheel travel in inches
+        double s1 = right_encoder.Counts() / R_ENCODE_P_IN; // wheel1
+        double s2 = left_encoder.Counts()  / L_ENCODE_P_IN; // wheel2
+        double s3 = front_encoder.Counts() / F_ENCODE_P_IN; // wheel3
+
+        // Inverse kiwi kinematics: wheel travel -> robot displacement
+        double dx = (2.0 * s1 - s2 - s3) / 3.0;
+        double dy = (s2 - s3) / SQRT3;
+
+        // Progress along commanded direction
+        double progress = dx * ux + dy * uy;
+
+        if (progress >= distance)
+        {
+            break;
+        }
+
         Sleep(0.005);
     }
 
+    StopAll();
+}
+
+/*
+ * DriveXY()
+ *
+ * Drives the robot to a target displacement in the robot's local coordinate frame.
+ *
+ * Coordinate system:
+ *  +X = forward
+ *  -X = backward
+ *  +Y = left
+ *  -Y = right
+ *
+ * Inputs:
+ *  xTarget  -> desired forward/backward travel (inches)
+ *  yTarget  -> desired left/right travel (inches)
+ *  speed    -> commanded drive speed (motor percent scale)
+ */
+
+void DriveXY(double xTarget, double yTarget, double speed)
+{
+    const double SQRT3 = 1.73205081;      // √3 used in kiwi kinematics equations
+    const double POSITION_TOLERANCE = 0.15; // acceptable error in inches before stopping
+
+    // Compute total straight-line distance to the target point
+    double distance = sqrt(xTarget * xTarget + yTarget * yTarget);
+
+    /*
+      Normalize the desired motion vector.
+      (ux, uy) is the unit direction the robot should move in.
+     */
+    double ux = xTarget / distance;
+    double uy = yTarget / distance;
+
+    /*
+     * Convert the unit direction into commanded robot-frame velocity.
+     * Vx = forward velocity component
+     * Vy = sideways velocity component
+     * omega = rotational velocity (not used here)
+     */
+    double Vx = speed * ux;
+    double Vy = speed * uy;
+    double omega = 0.0; // no rotation during this movement
+
+    /*
+     * Kiwi forward kinematics:
+     * Convert robot motion (Vx, Vy, omega) into individual wheel commands.
+     *
+     * wheel1 -> right wheel
+     * wheel2 -> left wheel
+     * wheel3 -> front wheel
+     */
+    double wheel1 = Vx + omega;
+    double wheel2 = -0.5 * Vx + 0.8660254 * Vy + omega;
+    double wheel3 = -0.5 * Vx - 0.8660254 * Vy + omega;
+
+    /*
+     * Reset encoders before starting motion so displacement starts at zero.
+     */
+    right_encoder.ResetCounts();
+    left_encoder.ResetCounts();
+    front_encoder.ResetCounts();
+
+    /*
+     * Apply motor commands.
+     * Each wheel receives the percent output calculated above.
+     */
+    rightdrive.SetPercent(wheel1);
+    leftdrive.SetPercent(wheel2);
+    frontdrive.SetPercent(wheel3);
+
+    /*
+     * Main control loop:
+     * Continuously estimate robot displacement from encoder readings
+     * and stop when the robot reaches the target point.
+     */
+    while (true)
+    {
+        /*
+         * Convert encoder counts into wheel travel distance (inches).
+         * Each encoder is divided by its counts-per-inch calibration value.
+         */
+        double s1 = right_encoder.Counts() / R_ENCODE_P_IN; // right wheel travel
+        double s2 = left_encoder.Counts()  / L_ENCODE_P_IN; // left wheel travel
+        double s3 = front_encoder.Counts() / F_ENCODE_P_IN; // front wheel travel
+
+        /*
+         * Kiwi inverse kinematics:
+         * Convert wheel travel distances into robot displacement.
+         *
+         * dx = forward displacement
+         * dy = sideways displacement
+         */
+        double dx = (2.0 * s1 - s2 - s3) / 3.0;
+        double dy = (s2 - s3) / SQRT3;
+
+        /*
+         * Compute the remaining error between the robot's current position
+         * and the requested target position.
+         */
+        double ex = xTarget - dx;
+        double ey = yTarget - dy;
+
+        // Euclidean distance from the target point
+        double error = sqrt(ex * ex + ey * ey);
+
+        /*
+         * Stop once the robot is close enough to the target.
+         */
+        if (error <= POSITION_TOLERANCE)
+        {
+            break;
+        }
+
+        // Small delay to prevent the loop from running excessively fast
+        Sleep(0.005);
+    }
+
+    // Stop all motors once the target position has been reached
     StopAll();
 }
 
