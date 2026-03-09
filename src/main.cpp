@@ -137,7 +137,7 @@ void Compost_Set_Speed(double percent){
     }
 } */
 
-void Drive(Direction dir, int8_t speed, double distance){
+void Drive(Direction dir, double speed, double distance){
 
     // Robot motion commands
     double Vx = 0.0;    // forward (+forward, -back)
@@ -147,39 +147,39 @@ void Drive(Direction dir, int8_t speed, double distance){
     switch (dir)
     {
     case FORWARD:
-        Vx = static_cast<double>(speed);
+        Vx = speed;
         break;
 
     case REVERSE:
-        Vx = static_cast<double>(-speed);
+        Vx = -speed;
         break;
 
     case LEFT:
-        Vy = static_cast<double>(speed);
+        Vy = speed;
         break;
 
     case RIGHT:
-        Vy = static_cast<double>(-speed);
+        Vy = -speed;
         break;
 
     case LEFT_F:
-        Vx = static_cast<double>(speed);
-        Vy = static_cast<double>(speed);
+        Vx = speed;
+        Vy = speed;
         break;
 
     case LEFT_R:
-        Vx = static_cast<double>(-speed);
-        Vy = static_cast<double>(speed);
+        Vx = -speed;
+        Vy = speed;
         break;
 
     case RIGHT_F:
-        Vx = static_cast<double>(speed);
-        Vy = static_cast<double>(-speed);
+        Vx = speed;
+        Vy = -speed;
         break;
 
     case RIGHT_R:
-        Vx = static_cast<double>(-speed);
-        Vy = static_cast<double>(-speed);
+        Vx = -speed;
+        Vy = -speed;
         break;
 
     default:
