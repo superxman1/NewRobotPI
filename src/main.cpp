@@ -361,66 +361,49 @@ void DriveXY(double xTarget, double yTarget, double speed)
     StopAll();
 }
 
-static void Turn_By_Encoder(bool turn_left, double angle_deg, double speed){
-    if(angle_deg <= 0.0 || speed == 0){
-        Stop(leftdrive);
-        Stop(rightdrive);
-        Stop(frontdrive);
-        return;
-    }
+void RotateDegrees(double angleDeg, double speed)
+{
+    // distance from robot center to wheel (inches)
+    const double ROBOT_RADIUS = 4.05234;
 
-    double turn_speed = abs(speed);
+    // Convert degrees to radians
+    double theta = angleDeg * PI / 180.0;
 
-    left_encoder.ResetCounts();
+    // Wheel travel distance required
+    double wheelDistance = ROBOT_RADIUS * fabs(theta);
+
+    // Convert to encoder counts
+    double targetCounts = wheelDistance * R_ENCODE_P_IN;
+
+    // Reset encoders
     right_encoder.ResetCounts();
+    left_encoder.ResetCounts();
     front_encoder.ResetCounts();
 
-    if(turn_left){
-        rightdrive.SetPercent(-turn_speed);
-        leftdrive.SetPercent(turn_speed);
-        frontdrive.SetPercent(turn_speed);
-    } else {
-        rightdrive.SetPercent(turn_speed);
-        leftdrive.SetPercent(-turn_speed);
-        frontdrive.SetPercent(-turn_speed);
-    }
+    // Determine direction
+    double direction = (theta > 0) ? 1.0 : -1.0;
 
-    double target_counts = angle_deg * TURN_COUNTS_PER_DEG;
-    while((((double)left_encoder.Counts() + (double)right_encoder.Counts() + (double)front_encoder.Counts())) < target_counts){
+    // All wheels spin the same direction for pure rotation
+    rightdrive.SetPercent(direction * speed);
+    leftdrive.SetPercent(direction * speed);
+    frontdrive.SetPercent(direction * speed);
+
+    // Wait until wheels reach required rotation distance
+    while (true)
+    {
+        double c1 = fabs(right_encoder.Counts());
+        double c2 = fabs(left_encoder.Counts());
+        double c3 = fabs(front_encoder.Counts());
+
+        double avg = (c1 + c2 + c3) / 3.0;
+
+        if (avg >= targetCounts)
+            break;
+
         Sleep(0.005);
     }
 
-    Stop(leftdrive);
-    Stop(rightdrive);
-    Stop(frontdrive);
-}
-
-void Turn_Left(double angle_deg, double speed){
-    Turn_By_Encoder(true, angle_deg, speed);
-    return;
-}
-
-void Turn_Right(double angle_deg, double speed){
-    Turn_By_Encoder(false, angle_deg, speed);
-    return;
-}
-
-void Turn_Left(){
-    Turn_Left(90.0, 15);
-    return;
-}
-
-void Turn_Right(){
-    Turn_Right(90.0, 15);
-    return;
-}
-
-void Stop(FEHMotor &motor){
-
-    motor.SetPercent(0.0);
-
-    return;
-
+    StopAll();
 }
 
 void StopAll(){
