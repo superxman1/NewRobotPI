@@ -39,7 +39,6 @@ FEHServo arm(FEHServo::Servo0);
 
 AnalogInputPin CdS_cell(FEHIO::Pin3);
 
-// void Drive(Direction dir, int8_t speed, float distance); //takes input direction (see diagram), speed (in percent), and distance (inches) 
 void StopAll(); //stops the motion of all motors 
 void Turn_Right(); 
 void Turn_Left(); 
@@ -81,14 +80,14 @@ enum Direction{
 
 
 
-void Drive(Direction dir, int8_t speed, double distance); //takes input direction (see diagram), speed (in percent), and distance (inches)
+void Drive(Direction dir, double speed, double distance); //takes input direction (see diagram), speed (in percent), and distance (inches)
 
 void StopAll(); //stops the motion of all motors
 
 void Stop(FEHMotor &motor); //stops the motion of a specific motor
 
-void Turn_Right(double angle_deg, int8_t speed);
-void Turn_Left(double angle_deg, int8_t speed);
+void Turn_Right(double angle_deg, double speed);
+void Turn_Left(double angle_deg, double speed);
 void Turn_Right();
 void Turn_Left();
 
@@ -209,15 +208,15 @@ void Drive(Direction dir, double speed, double distance){
     leftdrive.SetPercent(wheel2);
     frontdrive.SetPercent(wheel3);
 
-    double avg_target_counts = distance * ((L_ENCODE_P_IN + R_ENCODE_P_IN + F_ENCODE_P_IN) / 3.0);
-    while(((left_encoder.Counts() + right_encoder.Counts() + front_encoder.Counts()) / 3.0) < avg_target_counts){
+    double target_counts = distance * ((fabs(L_ENCODE_P_IN) + fabs(R_ENCODE_P_IN) + fabs(F_ENCODE_P_IN)));
+    while(((left_encoder.Counts() + right_encoder.Counts() + front_encoder.Counts())) < target_counts){
         Sleep(0.005);
     }
 
     StopAll();
 }
 
-static void Turn_By_Encoder(bool turn_left, double angle_deg, int8_t speed){
+static void Turn_By_Encoder(bool turn_left, double angle_deg, double speed){
     if(angle_deg <= 0.0 || speed == 0){
         Stop(leftdrive);
         Stop(rightdrive);
@@ -225,7 +224,7 @@ static void Turn_By_Encoder(bool turn_left, double angle_deg, int8_t speed){
         return;
     }
 
-    int8_t turn_speed = abs(speed);
+    double turn_speed = abs(speed);
 
     left_encoder.ResetCounts();
     right_encoder.ResetCounts();
@@ -242,7 +241,7 @@ static void Turn_By_Encoder(bool turn_left, double angle_deg, int8_t speed){
     }
 
     double target_counts = angle_deg * TURN_COUNTS_PER_DEG;
-    while((((double)left_encoder.Counts() + (double)right_encoder.Counts() + (double)front_encoder.Counts()) / 3.0) < target_counts){
+    while((((double)left_encoder.Counts() + (double)right_encoder.Counts() + (double)front_encoder.Counts())) < target_counts){
         Sleep(0.005);
     }
 
@@ -251,12 +250,12 @@ static void Turn_By_Encoder(bool turn_left, double angle_deg, int8_t speed){
     Stop(frontdrive);
 }
 
-void Turn_Left(double angle_deg, int8_t speed){
+void Turn_Left(double angle_deg, double speed){
     Turn_By_Encoder(true, angle_deg, speed);
     return;
 }
 
-void Turn_Right(double angle_deg, int8_t speed){
+void Turn_Right(double angle_deg, double speed){
     Turn_By_Encoder(false, angle_deg, speed);
     return;
 }
@@ -447,4 +446,8 @@ void ERCMain()
 
     while(!LCD.Touch(&x, &y));
 
+    while(1){
+        LCD.WriteLine(CdS_cell.Value());
+        Sleep(0.05);
+    }
 }
