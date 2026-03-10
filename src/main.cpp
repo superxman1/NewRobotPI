@@ -31,8 +31,8 @@ FEHMotor rightdrive(FEHMotor::Motor1,9.0);
 FEHMotor leftdrive(FEHMotor::Motor2,9.0);
 
 DigitalEncoder front_encoder(FEHIO::Pin8); 
-DigitalEncoder right_encoder(FEHIO::Pin9); 
-DigitalEncoder left_encoder(FEHIO::Pin10);
+DigitalEncoder right_encoder(FEHIO::Pin10); 
+DigitalEncoder left_encoder(FEHIO::Pin12);
 
 FEHMotor compost(FEHMotor::Motor3,5.0);
 FEHServo arm(FEHServo::Servo0);
@@ -202,14 +202,20 @@ void Drive(Direction dir, double speed, double distance)
     }
 
     // Kiwi drive forward kinematics: body command -> wheel commands
-    double wheel1 = Vx + omega;
-    double wheel2 = -0.5 * Vx + 0.8660254 * Vy + omega;
-    double wheel3 = -0.5 * Vx - 0.8660254 * Vy + omega;
+    double wheel1 = (Vx + omega)*100;
+    double wheel2 = (-0.5 * Vx + 0.8660254 * Vy + omega)*100;
+    double wheel3 = (-0.5 * Vx - 0.8660254 * Vy + omega)*100;
+    
+    LCD.WriteLine(wheel1);
+    LCD.WriteLine(wheel2);      
+    LCD.WriteLine(wheel3);
 
     // Reset encoders
     right_encoder.ResetCounts(); // wheel1
     left_encoder.ResetCounts();  // wheel2
     front_encoder.ResetCounts(); // wheel3
+
+    
 
     // Start motors
     rightdrive.SetPercent(wheel2);
@@ -291,9 +297,13 @@ void DriveXY(double xTarget, double yTarget, double speed)
      * wheel2 -> left wheel
      * wheel3 -> front wheel
      */
-    double wheel1 = Vx + omega;
-    double wheel2 = -0.5 * Vx + 0.8660254 * Vy + omega;
-    double wheel3 = -0.5 * Vx - 0.8660254 * Vy + omega;
+    double wheel1 = (Vx + omega)*100;
+    double wheel2 = (-0.5 * Vx + 0.8660254 * Vy + omega)*100;
+    double wheel3 = (-0.5 * Vx - 0.8660254 * Vy + omega)*100;
+
+    LCD.WriteLine(wheel1);
+    LCD.WriteLine(wheel2);      
+    LCD.WriteLine(wheel3);
 
     /*
      * Reset encoders before starting motion so displacement starts at zero.
