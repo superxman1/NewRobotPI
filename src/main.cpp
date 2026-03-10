@@ -30,14 +30,14 @@ FEHMotor frontdrive(FEHMotor::Motor0,9.0);
 FEHMotor rightdrive(FEHMotor::Motor1,9.0);
 FEHMotor leftdrive(FEHMotor::Motor2,9.0);
 
-DigitalEncoder left_encoder(FEHIO::Pin8); 
+DigitalEncoder front_encoder(FEHIO::Pin8); 
 DigitalEncoder right_encoder(FEHIO::Pin9); 
-DigitalEncoder front_encoder(FEHIO::Pin10);
+DigitalEncoder left_encoder(FEHIO::Pin10);
 
 FEHMotor compost(FEHMotor::Motor3,5.0);
 FEHServo arm(FEHServo::Servo0);
 
-AnalogInputPin CdS_cell(FEHIO::Pin3);
+AnalogInputPin CdS_cell(FEHIO::Pin11);
 
 void StopAll(); //stops the motion of all motors 
 void Turn_Right(); 
@@ -212,9 +212,9 @@ void Drive(Direction dir, double speed, double distance)
     front_encoder.ResetCounts(); // wheel3
 
     // Start motors
-    rightdrive.SetPercent(wheel1);
-    leftdrive.SetPercent(wheel2);
-    frontdrive.SetPercent(wheel3);
+    rightdrive.SetPercent(wheel2);
+    leftdrive.SetPercent(wheel3);
+    frontdrive.SetPercent(wheel1);
 
     while (true)
     {
@@ -569,13 +569,16 @@ void StopAll(){
 void ERCMain()
 
 {
-
     int x, y;
+
+    LCD.WriteLine("Waiting for start...");
 
     while(!LCD.Touch(&x, &y));
 
-    while(1){
-        LCD.WriteLine(CdS_cell.Value());
-        Sleep(0.05);
-    }
+    LCD.Clear();
+
+    Drive(FORWARD, 0.1, 5);
+
+    LCD.WriteLine("Done!");
+    
 }
