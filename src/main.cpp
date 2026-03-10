@@ -10,8 +10,9 @@ FEHMotor front(FEHMotor::Motor0, 9.0);
 FEHMotor right(FEHMotor::Motor1, 9.0);
 FEHMotor left(FEHMotor::Motor2, 9.0);
 
-DigitalEncoder left_encoder(FEHIO::Pin8);
-DigitalEncoder right_encoder(FEHIO::Pin9);
+DigitalEncoder left_encoder(FEHIO::Pin12);
+DigitalEncoder right_encoder(FEHIO::Pin10);
+DigitalEncoder front_encoder(FEHIO::Pin8);
 
 void frontmove(float percent, float time);
 void linleftmove(float percent);
@@ -131,9 +132,16 @@ void ERCMain()
     left_encoder.ResetCounts();
     right.SetPercent(25.0);
     left.SetPercent(-25.0);
+    front.SetPercent(25.0);
 
-    while(right_encoder.Counts() < 410);
-
+    while(right_encoder.Counts() < 100){
+        LCD.Clear();
+        LCD.WriteLine(right_encoder.Counts());
+        LCD.WriteLine(left_encoder.Counts());
+        LCD.WriteLine(front_encoder.Counts());
+        Sleep(0.1);
+    };
+    
     stop();
 
     LCD.WriteLine(right_encoder.Counts());
