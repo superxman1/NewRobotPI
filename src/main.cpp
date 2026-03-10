@@ -1,6 +1,6 @@
 #include <FEH.h>
 #include <Arduino.h>
-
+#include <FEHIO.h>
 
 // Declare things like Motors, Servos, etc. here
 // For example:
@@ -128,17 +128,18 @@ void ERCMain()
     int x, y;
     while(!LCD.Touch(&x, &y)){};
 
-    right_encoder.ResetCounts();
-    left_encoder.ResetCounts();
     right.SetPercent(25.0);
     left.SetPercent(-25.0);
     front.SetPercent(25.0);
 
-    while(right_encoder.Counts() < 100){
+    while(true){
         LCD.Clear();
-        LCD.WriteLine(right_encoder.Counts());
-        LCD.WriteLine(left_encoder.Counts());
-        LCD.WriteLine(front_encoder.Counts());
+        int rightcount = right_encoder.Counts();
+        int leftcount = left_encoder.Counts();
+        int frontcount = front_encoder.Counts();
+        LCD.WriteLine(rightcount);
+        LCD.WriteLine(leftcount);
+        LCD.WriteLine(frontcount);
         Sleep(0.1);
     };
     
