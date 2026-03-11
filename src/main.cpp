@@ -245,7 +245,10 @@ void Drive(Direction dir, double speed, double distance)
         // Progress along commanded direction
         double progress = dx * ux + dy * uy;
 
-        LCD.Clear();
+        
+        if (progress >= distance)
+        {
+            LCD.Clear();
         LCD.Write("s1: "); LCD.WriteLine(s1);
         LCD.Write("s2: "); LCD.WriteLine(s2);
         LCD.Write("s3: "); LCD.WriteLine(s3);
@@ -257,8 +260,6 @@ void Drive(Direction dir, double speed, double distance)
         LCD.Write("fencoder: "); LCD.WriteLine(front_encoder.Counts());
         //Sleep(.2);
 
-        if (progress >= distance)
-        {
             break;
         }
 
@@ -605,10 +606,10 @@ void ERCMain()
  
     LCD.Clear();
 
-    startButton();
+    //startButton();
 
-    /*
-    Drive(FORWARD, 0.30, 5);
+    
+    Drive(FORWARD, 0.30, 3);
 
     LCD.WriteLine("Done!");
 
@@ -621,7 +622,7 @@ void ERCMain()
 
     LCD.Clear();
 
-    Drive(RIGHT, 0.30, 5);
+    Drive(RIGHT, 0.30, 3);
     
- */
+ 
 }
