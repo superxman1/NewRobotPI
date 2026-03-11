@@ -55,9 +55,9 @@ void Turn_Left();
 void Stop(); */
 
 //after testing we will change these values to their correct encodings per inch, but just placeholders for now
-#define R_ENCODE_P_IN (318/7.874)
-#define L_ENCODE_P_IN (318/7.874)
-#define F_ENCODE_P_IN (318/7.874)
+#define R_ENCODE_P_IN ((318.0/7.874)*(5.0/11.0))
+#define L_ENCODE_P_IN ((318.0/7.874)*(5.0/11.0))
+#define F_ENCODE_P_IN ((318.0/7.874)*(5.0/11.0))
 
 // Encoder counts needed per degree of robot rotation.
 // Tune this value on your robot so angle turns are accurate.
@@ -163,35 +163,35 @@ void Drive(Direction dir, double speed, double distance)
         break;
 
     case LEFT:
-        ux = 0.0;  uy = 1.0;
+        ux = 0.0;  uy = -1.0;
         Vy = -speed;
         break;
 
     case RIGHT:
-        ux = 0.0;  uy = -1.0;
+        ux = 0.0;  uy = 1.0;
         Vy = speed;
         break;
 
     case LEFT_F:
-        ux = INV_SQRT2;  uy = INV_SQRT2;
+        ux = INV_SQRT2;  uy = -INV_SQRT2;
         Vx = speed * INV_SQRT2;
         Vy = -speed * INV_SQRT2;
         break;
 
     case LEFT_R:
-        ux = -INV_SQRT2; uy = INV_SQRT2;
+        ux = -INV_SQRT2; uy = -INV_SQRT2;
         Vx = -speed * INV_SQRT2;
         Vy =  -speed * INV_SQRT2;
         break;
 
     case RIGHT_F:
-        ux = INV_SQRT2;  uy = -INV_SQRT2;
+        ux = INV_SQRT2;  uy = INV_SQRT2;
         Vx = speed * INV_SQRT2;
         Vy = speed * INV_SQRT2;
         break;
 
     case RIGHT_R:
-        ux = -INV_SQRT2; uy = -INV_SQRT2;
+        ux = -INV_SQRT2; uy = INV_SQRT2;
         Vx = -speed * INV_SQRT2;
         Vy = speed * INV_SQRT2;
         break;
@@ -225,16 +225,30 @@ void Drive(Direction dir, double speed, double distance)
     while (true)
     {
         // Convert signed encoder counts -> signed wheel travel in inches
-        double s1 = right_encoder.Counts() / R_ENCODE_P_IN; // wheel1
-        double s2 = left_encoder.Counts()  / L_ENCODE_P_IN; // wheel2
-        double s3 = front_encoder.Counts() / F_ENCODE_P_IN; // wheel3
+        double s1 = -left_encoder.Counts() / R_ENCODE_P_IN; // wheel1
+        double s2 = front_encoder.Counts()  / L_ENCODE_P_IN; // wheel2
+        double s3 = -right_encoder.Counts() / F_ENCODE_P_IN; // wheel3
 
+
+        
         // Inverse kiwi kinematics: wheel travel -> robot displacement
-        double dx = (2.0 * s1 - s2 - s3) / 3.0;
-        double dy = (s2 - s3) / SQRT3;
+        double dx = (s2 - s3) / SQRT3;
+        double dy = -s1;
 
         // Progress along commanded direction
         double progress = dx * ux + dy * uy;
+
+        LCD.Clear();
+        LCD.Write("s1: "); LCD.WriteLine(s1);
+        LCD.Write("s2: "); LCD.WriteLine(s2);
+        LCD.Write("s3: "); LCD.WriteLine(s3);
+        LCD.Write("dx: "); LCD.WriteLine(dx);
+        LCD.Write("dy: "); LCD.WriteLine(dy);
+        LCD.Write("p: "); LCD.WriteLine(progress);
+        LCD.Write("rencoder: "); LCD.WriteLine(right_encoder.Counts());
+        LCD.Write("lencoder: "); LCD.WriteLine(left_encoder.Counts());
+        LCD.Write("fencoder: "); LCD.WriteLine(front_encoder.Counts());
+        //Sleep(.2);
 
         if (progress >= distance)
         {
@@ -584,8 +598,18 @@ void ERCMain()
 
     LCD.Clear();
 
-    Drive(LEFT, 0.40, 5);
+    Drive(FORWARD, 0.30, 5);
 
     LCD.WriteLine("Done!");
-    
+
+    LCD.WriteLine(right_encoder.Counts());
+    LCD.WriteLine(left_encoder.Counts());
+    LCD.WriteLine(front_encoder.Counts());
+
+
+    while(!LCD.Touch(&x, &y));
+
+    LCD.Clear();
+
+    Drive(RIGHT, 0.30, 5);
 }
