@@ -128,18 +128,18 @@ void ERCMain()
     int x, y;
     while(!LCD.Touch(&x, &y)){};
 
+    right_encoder.ResetCounts();
+    left_encoder.ResetCounts();
+
     right.SetPercent(25.0);
     left.SetPercent(-25.0);
     front.SetPercent(25.0);
 
-    while(true){
+    while(right_encoder.Counts() < 500){
         LCD.Clear();
-        int rightcount = right_encoder.Counts();
-        int leftcount = left_encoder.Counts();
-        int frontcount = front_encoder.Counts();
-        LCD.WriteLine(rightcount);
-        LCD.WriteLine(leftcount);
-        LCD.WriteLine(frontcount);
+        LCD.WriteLine(right_encoder.Counts());
+        LCD.WriteLine(left_encoder.Counts());
+        LCD.WriteLine(front_encoder.Counts());
         Sleep(0.1);
     };
     
