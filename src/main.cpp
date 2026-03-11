@@ -164,36 +164,36 @@ void Drive(Direction dir, double speed, double distance)
 
     case LEFT:
         ux = 0.0;  uy = 1.0;
-        Vy = speed;
+        Vy = -speed;
         break;
 
     case RIGHT:
         ux = 0.0;  uy = -1.0;
-        Vy = -speed;
+        Vy = speed;
         break;
 
     case LEFT_F:
         ux = INV_SQRT2;  uy = INV_SQRT2;
         Vx = speed * INV_SQRT2;
-        Vy = speed * INV_SQRT2;
+        Vy = -speed * INV_SQRT2;
         break;
 
     case LEFT_R:
         ux = -INV_SQRT2; uy = INV_SQRT2;
         Vx = -speed * INV_SQRT2;
-        Vy =  speed * INV_SQRT2;
+        Vy =  -speed * INV_SQRT2;
         break;
 
     case RIGHT_F:
         ux = INV_SQRT2;  uy = -INV_SQRT2;
-        Vx =  speed * INV_SQRT2;
-        Vy = -speed * INV_SQRT2;
+        Vx = speed * INV_SQRT2;
+        Vy = speed * INV_SQRT2;
         break;
 
     case RIGHT_R:
         ux = -INV_SQRT2; uy = -INV_SQRT2;
         Vx = -speed * INV_SQRT2;
-        Vy = -speed * INV_SQRT2;
+        Vy = speed * INV_SQRT2;
         break;
 
     default:
@@ -202,9 +202,9 @@ void Drive(Direction dir, double speed, double distance)
     }
 
     // Kiwi drive forward kinematics: body command -> wheel commands
-    double wheel1 = (Vx + omega)*100;
-    double wheel2 = (-0.5 * Vx + 0.8660254 * Vy + omega)*100;
-    double wheel3 = (-0.5 * Vx - 0.8660254 * Vy + omega)*100;
+    double wheel1 = (-1.0 * Vy + omega) * 100.0;               // bottom wheel
+    double wheel2 = ( 0.8660254 * Vx + 0.5 * Vy + omega) * 100.0; // right wheel
+    double wheel3 = (-0.8660254 * Vx + 0.5 * Vy + omega) * 100.0; // left wheel
     
     LCD.WriteLine(wheel1);
     LCD.WriteLine(wheel2);      
@@ -218,9 +218,9 @@ void Drive(Direction dir, double speed, double distance)
     
 
     // Start motors
-    rightdrive.SetPercent(wheel2);
-    leftdrive.SetPercent(wheel3);
-    frontdrive.SetPercent(wheel1);
+    rightdrive.SetPercent(-wheel3);
+    leftdrive.SetPercent(-wheel1);
+    frontdrive.SetPercent(-wheel2);
 
     while (true)
     {
@@ -297,28 +297,25 @@ void DriveXY(double xTarget, double yTarget, double speed)
      * wheel2 -> left wheel
      * wheel3 -> front wheel
      */
-    double wheel1 = (Vx + omega)*100;
-    double wheel2 = (-0.5 * Vx + 0.8660254 * Vy + omega)*100;
-    double wheel3 = (-0.5 * Vx - 0.8660254 * Vy + omega)*100;
-
+    double wheel1 = (-1.0 * Vy + omega) * 100.0;               // bottom wheel
+    double wheel2 = ( 0.8660254 * Vx + 0.5 * Vy + omega) * 100.0; // right wheel
+    double wheel3 = (-0.8660254 * Vx + 0.5 * Vy + omega) * 100.0; // left wheel
+    
     LCD.WriteLine(wheel1);
     LCD.WriteLine(wheel2);      
     LCD.WriteLine(wheel3);
 
-    /*
-     * Reset encoders before starting motion so displacement starts at zero.
-     */
-    right_encoder.ResetCounts();
-    left_encoder.ResetCounts();
-    front_encoder.ResetCounts();
+    // Reset encoders
+    right_encoder.ResetCounts(); // wheel1
+    left_encoder.ResetCounts();  // wheel2
+    front_encoder.ResetCounts(); // wheel3
 
-    /*
-     * Apply motor commands.
-     * Each wheel receives the percent output calculated above.
-     */
-    rightdrive.SetPercent(wheel1);
-    leftdrive.SetPercent(wheel2);
-    frontdrive.SetPercent(wheel3);
+    
+
+    // Start motors
+    rightdrive.SetPercent(-wheel3);
+    leftdrive.SetPercent(-wheel1);
+    frontdrive.SetPercent(-wheel2);
 
     /*
      * Main control loop:
@@ -587,7 +584,7 @@ void ERCMain()
 
     LCD.Clear();
 
-    Drive(FORWARD, 0.1, 5);
+    Drive(LEFT, 0.40, 5);
 
     LCD.WriteLine("Done!");
     
