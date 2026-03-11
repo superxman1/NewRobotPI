@@ -1,454 +1,277 @@
-#include <FEH.h>
-#include <Arduino.h>
 #include <FEHLCD.h>
 #include <FEHIO.h>
+#include <FEHUtility.h>
+#include <FEHMotor.h>
+#include <FEHRCS.h>
 #include <FEHSD.h>
 
-//Hello
-// Declare things like Motors, Servos, etc. here
-// For example:
-// FEHMotor leftMotor(FEHMotor::Motor0, 6.0);
-// FEHServo servo(FEHServo::Servo0);
+// RCS Delay time
+#define RCS_WAIT_TIME_IN_SEC 0.35
 
-FEHMotor frontdrive(FEHMotor::Motor0,9.0); 
-FEHMotor rightdrive(FEHMotor::Motor1,9.0);
-FEHMotor leftdrive(FEHMotor::Motor2,9.0);
+// Shaft encoding counts for CrayolaBots
+#define COUNTS_PER_INCH 40.5
+#define COUNTS_PER_DEGREE 2.48
 
-DigitalEncoder left_encoder(FEHIO::Pin9); 
-DigitalEncoder right_encoder(FEHIO::Pin8); 
-DigitalEncoder front_encoder(FEHIO::Pin8); 
+// Defines for pulsing the robot
+#define PULSE_TIME 0.1
+#define PULSE_POWER 10
 
-AnalogInputPin CdS_cell(FEHIO::Pin3);
+// Define for the motor power
+#define POWER 25
 
-// void Drive(Direction dir, int8_t speed, float distance); //takes input direction (see diagram), speed (in percent), and distance (inches) 
-void StopAll(); //stops the motion of all motors 
-void Stop(FEHMotor motor); //stops the motion of a specific motor 
-void Turn_Right(); 
-void Turn_Left(); 
-void startButton();
-void simpleDrive(int speed, float time);
-void simpleReverse(int speed, float time);
-void startButton();
-void humidifier();
+// Orientation of AruCo Code
+#define PLUS 0
+#define MINUS 1
 
-/* void Drive_Forward();
-void Drive_Back();
-void Turn_Right();
-void Turn_Left();
-void Stop(); */
+//Declarations for encoders & motors
+DigitalEncoder right_encoder(FEHIO::Pin8);
+DigitalEncoder left_encoder(FEHIO::Pin9);
+FEHMotor right_motor(FEHMotor::Motor1, 9.0);
+FEHMotor left_motor(FEHMotor::Motor0, 9.0);
 
-//after testing we will change these values to their correct encodings per inch, but just placeholders for now 
-#define R_ENCODE_P_IN 1 
-#define L_ENCODE_P_IN 1 
-#define F_ENCODE_P_IN 1 
+/*
+ * Pulse forward a short distance using time
+ */
+void pulse_forward(int percent, float seconds) 
+{
+    // Set both motors to desired percent
+    right_motor.SetPercent(percent);
+    left_motor.SetPercent(percent);
 
-enum Direction{ 
-    FORWARD, 
-    REVERSE, 
-    LEFT_F, 
-    LEFT_R, 
-    RIGHT_F, 
-    RIGHT_R 
-}; 
+    // Wait for the correct number of seconds
+    Sleep(seconds);
 
-
-#define START_LIGHT 1
-/* void startButton() {
-    float startTime = TimeNow();
-    float startCondition = 0;
-    float lightReading();
-
-    while(startTime < 10) {
-        float lightReading = CdS_cell.Value();
-
-        if(lightReading < START_LIGHT) {
-            Drive(REVERSE, 0.25, 5);
-            startCondition = 1;
-        }
-        startTime = TimeNow();
-    }
-
-    if(startCondition == 0) {
-        Drive(REVERSE, 0.25, 5);
-        startCondition = 1;
-    }
-} */
-
-void Drive(Direction dir, int8_t speed, float distance){ 
-
-//will eventually need a correction factor for momentum 
-
-    switch (dir) {  
-        case FORWARD: 
-            //reset count
-            left_encoder.ResetCounts(); 
-            right_encoder.ResetCounts(); 
-
-            //turn motor on to specified speed  
-            rightdrive.SetPercent(speed); 
-            leftdrive.SetPercent(speed); 
-            //wait until distance has been driven 
-
-            while(left_encoder.Counts() < (distance*L_ENCODE_P_IN) || right_encoder.Counts() < (distance*R_ENCODE_P_IN)); 
-                //stop all motors (can eventually be changed for correct motors but im lazy rn) 
-                StopAll(); 
-            break; 
-
-        case REVERSE: 
-            left_encoder.ResetCounts(); 
-            right_encoder.ResetCounts(); 
-            rightdrive.SetPercent((-1)*speed); 
-            leftdrive.SetPercent((-1)*speed); 
-
-            while(left_encoder.Counts() < (distance*L_ENCODE_P_IN) || right_encoder.Counts() < (distance*R_ENCODE_P_IN)); 
-                StopAll(); 
-            break; 
-
-        case LEFT_F: 
-            front_encoder.ResetCounts(); 
-            left_encoder.ResetCounts(); 
-            frontdrive.SetPercent(speed); 
-            leftdrive.SetPercent(speed); 
-
-            while(left_encoder.Counts() < (distance*L_ENCODE_P_IN) || front_encoder.Counts() < (distance*F_ENCODE_P_IN)); 
-                StopAll(); 
-            break; 
-
-        case LEFT_R: 
-            front_encoder.ResetCounts(); 
-            left_encoder.ResetCounts(); 
-            frontdrive.SetPercent((-1)*speed); 
-            leftdrive.SetPercent((-1)*speed); 
-
-            while(left_encoder.Counts() < (distance*L_ENCODE_P_IN) || front_encoder.Counts() < (distance*F_ENCODE_P_IN)); 
-                StopAll(); 
-            break; 
-
-        case RIGHT_F: 
-            front_encoder.ResetCounts(); 
-            right_encoder.ResetCounts(); 
-            rightdrive.SetPercent(speed); 
-            frontdrive.SetPercent(speed); 
-
-            while(front_encoder.Counts() < (distance*F_ENCODE_P_IN) || right_encoder.Counts() < (distance*R_ENCODE_P_IN)); 
-                StopAll(); 
-            break; 
-
-        case RIGHT_R: 
-            front_encoder.ResetCounts(); 
-            right_encoder.ResetCounts(); 
-            rightdrive.SetPercent((-1)*speed); 
-            frontdrive.SetPercent((-1)*speed); 
-
-            while(front_encoder.Counts() < (distance*F_ENCODE_P_IN) || right_encoder.Counts() < (distance*R_ENCODE_P_IN)); 
-                StopAll(); 
-            break; 
-
-        default: 
-            LCD.WriteLine("Direction not specidified during drive function"); 
-        break; 
-    } 
-} 
-
-/* void Turn_Left(){ 
-    rightdrive.SetPercent(-15.); 
-    leftdrive.SetPercent(15.); 
-    Sleep(2.0); 
-    Stop(); 
-    return; 
-} */
-
- 
-
-/* void Turn_Right(){ 
-    rightdrive.SetPercent(15.); 
-    leftdrive.SetPercent(-15.); 
-    Sleep(2.0); 
-    Stop(); 
-    return; 
-} */
-
- 
-
-void Stop(FEHMotor motor){ 
-    motor.SetPercent(0.); 
-    return; 
-} 
-
- 
-
-void StopAll(){ 
-    rightdrive.SetPercent(0.); 
-    leftdrive.SetPercent(0.); 
-    frontdrive.SetPercent(0.); 
-    return; 
-} 
-
-void simpleDrive(float speed, float time) {
-    float currentTime = TimeNow();
-
-    while(currentTime < time) {
-        rightdrive.SetPercent(speed); 
-        leftdrive.SetPercent(speed);
-    }
-
-    StopAll();
+    // Turn off motors
+    right_motor.Stop();
+    left_motor.Stop();
 }
 
-void simpleReverse(float speed, float time) {
-    float currentTime = TimeNow();
+/*
+ * Pulse counterclockwise a short distance using time
+ */
+void pulse_counterclockwise(int percent, float seconds) 
+{
+    // Set both motors to desired percent
+    right_motor.SetPercent(percent);
+    left_motor.SetPercent(-percent);
 
-    while(currentTime < time) {
-        rightdrive.SetPercent(-speed); 
-        leftdrive.SetPercent(-speed);
+    // Wait for the correct number of seconds
+    Sleep(seconds);
 
-        currentTime = TimeNow();
+    // Turn off motors
+    right_motor.Stop();
+    left_motor.Stop();
+}
+
+/*
+ * Move forward using shaft encoders where percent is the motor percent and counts is the distance to travel
+ */
+void move_forward(int percent, int counts) //using encoders
+{
+    // Reset encoder counts
+    right_encoder.ResetCounts();
+    left_encoder.ResetCounts();
+
+    // Set both motors to desired percent
+    right_motor.SetPercent(percent);
+    left_motor.SetPercent(percent);
+
+    // While the average of the left and right encoder are less than counts,
+    // keep running motors
+    while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts);
+
+    // Turn off motors
+    right_motor.Stop();
+    left_motor.Stop();
+}
+
+/*
+ * Turn counterclockwise using shaft encoders where percent is the motor percent and counts is the distance to travel
+ */
+void turn_counterclockwise(int percent, int counts) 
+{
+    // Reset encoder counts
+    right_encoder.ResetCounts();
+    left_encoder.ResetCounts();
+
+    // Set both motors to desired percent
+    right_motor.SetPercent(percent);
+    left_motor.SetPercent(-percent);
+
+    // While the average of the left and right encoder are less than counts,
+    // keep running motors
+    while((left_encoder.Counts() + right_encoder.Counts()) / 2. < counts);
+
+    // Turn off motors
+    right_motor.Stop();
+    left_motor.Stop();
+}
+
+/* 
+ * Use RCS to move to the desired x_coordinate based on the orientation of the AruCo code
+ */
+void check_x(float x_coordinate, int orientation)
+{
+    // Determine the direction of the motors based on the orientation of the AruCo code 
+    int power = PULSE_POWER;
+    if(orientation == MINUS){
+        power = -PULSE_POWER;
     }
 
-    StopAll();
+    RCSPose* pose = RCS.RequestPosition();
+
+    // Check if receiving proper RCS coordinates and whether the robot is within an acceptable range
+    for (int i = 0; i < 10; i++) {
+        if(pose->x >= 0 && (pose->x < x_coordinate - 1 || pose->x > x_coordinate + 1))
+        {
+            if(pose->x < x_coordinate - 1)
+            {
+                // Pulse the motors for a short duration in the correct direction
+                pulse_forward(-power, PULSE_TIME);
+            }
+            else if(pose->x > x_coordinate + 1)
+            {
+                // Pulse the motors for a short duration in the correct direction
+                pulse_forward(power, PULSE_TIME);
+            }
+            Sleep(RCS_WAIT_TIME_IN_SEC);
+
+            pose = RCS.RequestPosition();
+        }
+}
 }
 
 
-#define RED_LIGHT
-#define BLUE_LIGHT
-
-/* void humidifier() {
-    float startTime = TimeNow();
-    float condition = 0
-    float lightReading;
-    while(startTime < 3 & condition == 0) {
-        lightReading = CdS_Cell.Value();
-
-        if(lightReading < RED_LIGHT) {
-            Drive(RIGHT_R, 0.1, 2);
-            Drive(FORWARD, 0.1, 3);
-            condition = 1;
-        }
-
-        else if (lightReading < RED_LIGHT && lightReading > BLUE_LIGHT && condition == 0) {
-            Drive(LEFT_F, 0.1, 2);
-            Drive(Forward, 0.1, 3);
-            condition = 1; 
-        }
-        startTime = TimeNow();
+/* 
+ * Use RCS to move to the desired y_coordinate based on the orientation of the QR code
+ */
+void check_y(float y_coordinate, int orientation)
+{
+    // Determine the direction of the motors based on the orientation of the QR code
+    int power = PULSE_POWER;
+    if(orientation == MINUS){
+        power = -PULSE_POWER;
     }
 
-    if(condition == 0) {
-        Drive(RIGHT_R, 0.1, 2);
-        Drive(FORWARD, 0.1, 3);
-        condition = 1;
-    }
-} */
+    RCSPose* pose = RCS.RequestPosition();
 
-/*void Course(){ 
+    // Check if receiving proper RCS coordinates and whether the robot is within an acceptable range
+    for (int i = 0; i < 10; i++) {
+        if(pose->y >= 0 && (pose->y < y_coordinate - 1 || pose->y > y_coordinate + 1))
+        {
+            if(pose->y < y_coordinate - 1)
+            {
+                // Pulse the motors for a short duration in the correct direction
+                pulse_forward(-power, PULSE_TIME);
+            }
+            else if(pose->y > y_coordinate + 1)
+            {
+                // Pulse the motors for a short duration in the correct direction
+            pulse_forward(power, PULSE_TIME);
+            }
+            Sleep(RCS_WAIT_TIME_IN_SEC);
+            
+            pose = RCS.RequestPosition();
+        }   
+    }   
+}
 
-//567 
+/* 
+ * Use RCS to move to the desired heading
+ */
+void check_heading(float heading)
+{
+    //You will need to fill out this one yourself and take into account
+    //checking for proper RCS data and the edge conditions
+    //(when you want the robot to go to 0 degrees or close to 0 degrees)
 
-    //Reseting encoder counts 
+    /*
+        SUGGESTED ALGORITHM:
+        1. Check the current orientation of the QR code and the desired orientation of the QR code
+        2. Check if the robot is within the desired threshold for the heading based on the orientation
+        3. Pulse in the correct direction based on the orientation
+    */
 
-    left_encoder.ResetCounts(); 
-
-    right_encoder.ResetCounts(); 
-
- 
-
-    //Sets motors to 25% power 
-
-    leftdrive.SetPercent(25.0); 
-
-    rightdrive.SetPercent(25.0); 
-
- 
-
-    //Wait until encoder reaches 567 counts 
-
-    while(left_encoder.Counts() < 567); 
-
- 
-
-    Stop(); 
-
- 
-
-    Sleep(1.0); 
-
- 
-
-    Turn_Left(); 
-
- 
-
-    Sleep(1.0); 
-
- 
-
-    //Reseting encoder counts 
-
-    left_encoder.ResetCounts(); 
-
-    right_encoder.ResetCounts(); 
-
- 
-
-    //Sets motors to 25% power 
-
-    leftdrive.SetPercent(25.0); 
-
-    rightdrive.SetPercent(25.0); 
-
- 
-
-    //Wait until encoder reaches 405 counts 
-
-    while(left_encoder.Counts() < 405); 
-
- 
-
-    Stop(); 
-
- 
-
-    Sleep(1.0); 
-
- 
-
-    Turn_Right(); 
-
- 
-
-    Sleep(1.0); 
-
- 
-
-    //Reseting encoder counts 
-
-    left_encoder.ResetCounts(); 
-
-    right_encoder.ResetCounts(); 
-
- 
-
-    //Sets motors to 25% power 
-
-    leftdrive.SetPercent(25.0); 
-
-    rightdrive.SetPercent(25.0); 
-
- 
-
-    //Wait until encoder reaches 162 counts 
-
-    while(left_encoder.Counts() < 162); 
-
- 
-
-    Stop(); 
-
- 
-
-    return; 
-
-}*/ 
+    RCSPose* pose = RCS.RequestPosition();
+    int power = PULSE_POWER;
 
 
-    enum LineStates {
-        MIDDLE,
-        RIGHT,
-        LEFT
-    };
-
-
-    void ERCMain()
+    for(int i = 0; i < 10; i++)
     {
-        int x, y; //for touch screen
+        if(pose->heading >= 0)  
+        {
+            // Compute shortest angle difference (-180 to 180)
+            float diff = heading - pose->heading;
+            if(diff > 180) diff -= 360;
+            if(diff < -180) diff += 360;
 
-        /* DigitalInputPin fr_switch(FEHIO::Pin6);
-        DigitalInputPin fl_switch(FEHIO::Pin7);
-        DigitalInputPin br_switch(FEHIO::Pin8);
-        DigitalInputPin bl_switch(FEHIO::Pin9);
+            if(diff < -3)
+            {
+                // too far clockwise → rotate counterclockwise
+                pulse_counterclockwise(power, PULSE_TIME);
+            }
+            else if(diff > 3)
+            {
+                // too far counterclockwise → rotate clockwise
+                pulse_counterclockwise(-power, PULSE_TIME);
+            }
+            else
+            {
+                break;
+            }
 
-        // Declarations for analog optosensors
-        AnalogInputPin right_opto(FEHIO::Pin0);
-        AnalogInputPin middle_opto(FEHIO::Pin1);
-        AnalogInputPin left_opto(FEHIO::Pin2); */
+            Sleep(RCS_WAIT_TIME_IN_SEC);
+            pose = RCS.RequestPosition();
+        }
+    }
+}
 
-    
+void ERCMain()
+{
+    int touch_x,touch_y;
+    float A_x, A_y, B_x, B_y, C_x, C_y, D_x, D_y;
+    float A_heading, B_heading, C_heading, D_heading;
+    int B_C_counts, C_D_counts, turn_90_counts;
 
-        //Initialize the screen
-        LCD.Clear(BLACK);
-        LCD.SetFontColor(WHITE);
+    RCS.InitializeTouchMenu("0800A1KDN");
 
-        // LCD.WriteLine("Analog Optosensor Testing");
-        // LCD.WriteLine("Touch the screen");
-        // while(!LCD.Touch(&x,&y)); //Wait for screen to be pressed
-        // while(LCD.Touch(&x,&y)); //Wait for screen to be unpressed
+    LCD.WriteLine("RCS & Data Logging Test");
+    LCD.WriteLine("Press Screen To Start");
+    while(!LCD.Touch(&touch_x,&touch_y));
+    while(LCD.Touch(&touch_x,&touch_y));
 
-        /* Drive_Forward();
-        while(fr_switch.Value() == 1 && fl_switch.Value() == 1){ */
+    // COMPLETE CODE HERE TO READ SD CARD FOR LOGGED X AND Y DATA POINTS
+    FEHFile* fptr = SD.FOpen("RCS_TEST.txt", "r");
+    SD.FScanf(fptr, "%f%f", &A_x, &A_y);
+    SD.FScanf(fptr, "%f%f", &B_x, &B_y);
+    SD.FScanf(fptr, "%f%f", &C_x, &C_y);
+    SD.FScanf(fptr, "%f%f", &D_x, &D_y);
+    SD.FClose(fptr);
 
-        // Record values for optosensors on and off of the straight line
-        // Left Optosensor on straight line
+    // WRITE CODE HERE TO SET THE HEADING DEGREES AND COUNTS VALUES
+    A_heading = 90;
+    B_heading = 180;
+    C_heading = 270;
+    D_heading = 0;
 
-        //while(!LCD.Touch(&x,&y)); //Wait for screen to be pressed
-        // while(LCD.Touch(&x,&y)); //Wait for screen to be unpressed
-        // Write the value returned by the optosensor to the screen
+    B_C_counts = 10 * COUNTS_PER_INCH;
+    C_D_counts = 10 * COUNTS_PER_INCH;
 
-        /* int state = MIDDLE;
+    turn_90_counts = 90 * COUNTS_PER_DEGREE;
 
-        while(1) {
-            float rightOptosensorValue = right_opto.Value();
-            float middleOptosensorValue = middle_opto.Value();
-            float leftOptosensorValue = left_opto.Value();
+    // A --> B
+    check_y(B_y, PLUS);
+    check_heading(B_heading);
 
-            switch(state) {
-                case MIDDLE:
-                    Drive_Forward();
+    // B --> C
+    move_forward(POWER, B_C_counts);
+    check_x(C_x, MINUS);
+    turn_counterclockwise(POWER, turn_90_counts);
+    check_heading(C_heading);
 
-                    if(rightOptosensorValue > 2.4) {
-                        state = RIGHT;
-                        LCD.WriteLine(state);
-                    }
-                    else if (leftOptosensorValue > 2.4) {
-                        state = LEFT;
-                        LCD.WriteLine(state);
-                    }
-                    break;
-
-                case RIGHT:
-                    leftdrive.SetPercent(25.);
-                    rightdrive.SetPercent(-10.);
-
-                    if(rightOptosensorValue < 2.5) {
-                        state = MIDDLE;
-                        LCD.WriteLine(state);
-                    }
-                    break;
-
-                case LEFT:
-                    leftdrive.SetPercent(10.);
-                    rightdrive.SetPercent(-25.);
-
-                    if(leftOptosensorValue < 2.5) {
-                        state = MIDDLE;
-                        LCD.WriteLine(state);
-                    }
-                    break;
-
-                /* default:
-                    leftdrive.Stop();
-                    rightdrive.Stop();
-                    break; */
-             //} 
-
-            // Sleep(0.03); 
-
-
-        // } 
-
-        simpleDrive(20., 5);
-        // Sleep(1);
-        // simpleReverse(20, 5);
-
-
-     } 
-    
+    // C --> D
+    move_forward(POWER, C_D_counts);
+    check_y(D_y, MINUS);
+    turn_counterclockwise(POWER, turn_90_counts);
+    check_heading(D_heading);
+}
