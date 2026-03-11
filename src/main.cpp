@@ -37,7 +37,7 @@ DigitalEncoder left_encoder(FEHIO::Pin12);
 FEHMotor compost(FEHMotor::Motor3,5.0);
 FEHServo arm(FEHServo::Servo0);
 
-AnalogInputPin CdS_cell(FEHIO::Pin11);
+AnalogInputPin CdS_cell(FEHIO::Pin0);
 
 void StopAll(); //stops the motion of all motors 
 void Turn_Right(); 
@@ -55,9 +55,9 @@ void Turn_Left();
 void Stop(); */
 
 //after testing we will change these values to their correct encodings per inch, but just placeholders for now
-#define R_ENCODE_P_IN ((318.0/7.874)*(5.0/11.0))
-#define L_ENCODE_P_IN ((318.0/7.874)*(5.0/11.0))
-#define F_ENCODE_P_IN ((318.0/7.874)*(5.0/11.0))
+#define R_ENCODE_P_IN ((318.0/7.874))
+#define L_ENCODE_P_IN ((318.0/7.874))
+#define F_ENCODE_P_IN ((318.0/7.874))
 
 // Encoder counts needed per degree of robot rotation.
 // Tune this value on your robot so angle turns are accurate.
@@ -113,8 +113,10 @@ void Compost_Set_Speed(double percent){
  
 
 
-#define START_LIGHT 1
-/* void startButton() {
+#define START_LIGHT -0.5
+#define RED_LIGHT -0.5
+#define BLUE_LIGHT -0.3
+void startButton() {
     float startTime = TimeNow();
     float currentTime = 0;
     float startCondition = 0;
@@ -123,18 +125,23 @@ void Compost_Set_Speed(double percent){
     while(currentTime < 10) {
         float lightReading = CdS_cell.Value();
 
+        LCD.Clear();
+        LCD.Write("Light Reading: ");
+        LCD.WriteLine(lightReading);
+
         if(lightReading < START_LIGHT) {
-            Drive(REVERSE, 0.25, 5);
+            Drive(REVERSE, 0.25, 2);
             startCondition = 1;
         }
         currentTime = startTime - TimeNow();
+        Sleep(.3);
     }
 
     if(startCondition == 0) {
         Drive(REVERSE, 0.25, 5);
         startCondition = 1;
     }
-} */
+} 
 
 void Drive(Direction dir, double speed, double distance)
 {
@@ -233,7 +240,7 @@ void Drive(Direction dir, double speed, double distance)
         
         // Inverse kiwi kinematics: wheel travel -> robot displacement
         double dx = (s2 - s3) / SQRT3;
-        double dy = -s1;
+        double dy = ((-2.0 * s1) + s2 + s3) / 3.0;
 
         // Progress along commanded direction
         double progress = dx * ux + dy * uy;
@@ -405,9 +412,9 @@ void RotateDegrees(double angleDeg, double speed)
     double direction = (theta > 0) ? 1.0 : -1.0;
 
     // All wheels spin the same direction for pure rotation
-    rightdrive.SetPercent(direction * speed);
-    leftdrive.SetPercent(direction * speed);
-    frontdrive.SetPercent(direction * speed);
+    rightdrive.SetPercent(direction * -speed);
+    leftdrive.SetPercent(direction * -speed);
+    frontdrive.SetPercent(direction * -speed);
 
     // Wait until wheels reach required rotation distance
     while (true)
@@ -595,9 +602,12 @@ void ERCMain()
     LCD.WriteLine("Waiting for start...");
 
     while(!LCD.Touch(&x, &y));
-
+ 
     LCD.Clear();
 
+    startButton();
+
+    /*
     Drive(FORWARD, 0.30, 5);
 
     LCD.WriteLine("Done!");
@@ -612,4 +622,6 @@ void ERCMain()
     LCD.Clear();
 
     Drive(RIGHT, 0.30, 5);
+    
+ */
 }
