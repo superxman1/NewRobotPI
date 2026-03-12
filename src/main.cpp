@@ -640,7 +640,7 @@ void DriveTEST(float Angle, float Speed, float Distance){
 int CDS_CHECK(){
         LCD.Clear();
         LCD.WriteLine(CdS_cell.Value());
-        Sleep(0.5);
+        Sleep(0.3);
 
     if(CdS_cell.Value() < 1.75){
         return 0; //Red
@@ -674,10 +674,35 @@ void Milestone_2(){
     //Detect Red v Blue
     int Light = 2;
 
-    while(Light == 2){
-        Light = CDS_CHECK();
-    }
+double legLength = 0.25;
+double legStep = 0.25;
 
+
+while (Light == 2)
+{
+    Light = CDS_CHECK();
+    if (Light != 2) break;
+    DriveTEST(180, 20.0, legLength);
+    Light = CDS_CHECK();
+    if (Light != 2) break;
+
+    DriveTEST(90, 20.0, legLength);
+    Light = CDS_CHECK();
+    if (Light != 2) break;
+
+    legLength += legStep;
+
+    DriveTEST(0, 20.0, legLength);
+    Light = CDS_CHECK();
+    if (Light != 2) break;
+
+    DriveTEST(270, 20.0, legLength);
+    Light = CDS_CHECK();
+    if (Light != 2) break;
+
+    legLength += legStep;
+}
+    
     if(Light == 0){ //Red
         DriveTEST(90, 20.0, 1.75);
         DriveTEST(0, 20.0, 3.0);
