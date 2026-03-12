@@ -9,7 +9,7 @@
 //Hello
 
 #define Radian_Conversion (PI/180)
-#define BASECOUNT 36.8081977478
+#define BASECOUNT 39
 // Declare things like Motors, Servos, etc. here
 // For example:
 // FEHMotor leftMotor(FEHMotor::Motor0, 6.0);
@@ -32,9 +32,9 @@ FEHMotor frontdrive(FEHMotor::Motor0,9.0);
 FEHMotor rightdrive(FEHMotor::Motor1,9.0);
 FEHMotor leftdrive(FEHMotor::Motor2,9.0);
 
-DigitalEncoder front_encoder(FEHIO::Pin8); 
-DigitalEncoder right_encoder(FEHIO::Pin10); 
-DigitalEncoder left_encoder(FEHIO::Pin12);
+DigitalEncoder front_encoder(FEHIO::Pin10); 
+DigitalEncoder right_encoder(FEHIO::Pin9); 
+DigitalEncoder left_encoder(FEHIO::Pin8);
 
 FEHMotor compost(FEHMotor::Motor3,5.0);
 FEHServo arm(FEHServo::Servo0);
@@ -594,15 +594,17 @@ void Milestone_2(){
 void DriveTEST(float Angle, float Speed, float Distance){
     Angle = Angle * Radian_Conversion;
 
+    //Sets a multiplier based on the angle of each wheel
     float frontmult, rightmult, leftmult;
     frontmult = sin(Angle);
     rightmult = sin(Angle - (2*(PI/3)));
     leftmult = sin(Angle - (4*(PI/3)));
 
+    //Determines the number of counts each wheel must travel
     int frontcount, rightcount, leftcount;
-    frontcount = (Distance * BASECOUNT * frontmult);
-    rightcount = (Distance * BASECOUNT * rightmult);
-    leftcount = (Distance * BASECOUNT * leftmult);
+    frontcount = Distance * BASECOUNT * frontmult;
+    rightcount = Distance * BASECOUNT * rightmult;
+    leftcount = Distance * BASECOUNT * leftmult;
 
     //Prepping for actual moving loop to start
     if(frontcount == 0){
@@ -615,18 +617,27 @@ void DriveTEST(float Angle, float Speed, float Distance){
         leftcount = 1000;
     }
 
+    //Resets the encoders before moving
     front_encoder.ResetCounts();
     right_encoder.ResetCounts();
     left_encoder.ResetCounts();
 
+    //Starting the motors (INCLUDING CORRECTION FACTORS)
     frontdrive.SetPercent(-(Speed * frontmult));
     rightdrive.SetPercent(-(Speed * rightmult));
-    leftdrive.SetPercent((-(Speed * leftmult)));
+    leftdrive.SetPercent(-((Speed * leftmult)));
 
     while(abs(front_encoder.Counts()) < abs(frontcount) && abs(right_encoder.Counts()) < abs(rightcount) && abs(left_encoder.Counts()) < abs(leftcount)){
         //Keep moving until counts reached
     }
 
+    //Writing encoder counts to screen
+    LCD.Clear();
+    LCD.WriteLine(front_encoder.Counts());
+    LCD.WriteLine(right_encoder.Counts());
+    LCD.WriteLine(left_encoder.Counts());
+
+    //Stops the motors
     StopAll();
 
     return;
@@ -636,13 +647,17 @@ void ERCMain()
 
 {
     int x, y;
-
+    while(1){
     while(!LCD.Touch(&x, &y));
 
-    DriveTEST(0, 20.0, 6.0);
+    DriveTEST(0, 20.0, 24.0);
 
     StopAll();
-    
+
+    DriveTEST(180, 20.0, 10.0);
+
+    StopAll();
+    }
     /*Drive(FORWARD, 0.30, 3);
 
     LCD.WriteLine("Done!");
