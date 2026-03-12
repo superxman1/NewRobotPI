@@ -8,6 +8,8 @@
 
 //Hello
 
+#define Radian_Conversion (PI/180)
+#define BASECOUNT 36.8081977478
 // Declare things like Motors, Servos, etc. here
 // For example:
 // FEHMotor leftMotor(FEHMotor::Motor0, 6.0);
@@ -113,7 +115,7 @@ void Compost_Set_Speed(double percent){
  
 
 
-#define START_LIGHT -0.5
+#define START_LIGHT 1.5
 #define RED_LIGHT -0.5
 #define BLUE_LIGHT -0.3
 void startButton() {
@@ -122,25 +124,8 @@ void startButton() {
     float startCondition = 0;
     float lightReading();
 
-    while(currentTime < 10) {
-        float lightReading = CdS_cell.Value();
-
-        LCD.Clear();
-        LCD.Write("Light Reading: ");
-        LCD.WriteLine(lightReading);
-
-        if(lightReading < START_LIGHT) {
-            Drive(REVERSE, 0.25, 2);
-            startCondition = 1;
-        }
-        currentTime = startTime - TimeNow();
-        Sleep(.3);
-    }
-
-    if(startCondition == 0) {
-        Drive(REVERSE, 0.25, 5);
-        startCondition = 1;
-    }
+    while(CdS_cell.Value() > 1.5){}
+    return;
 } 
 
 void Drive(Direction dir, double speed, double distance)
@@ -594,22 +579,71 @@ void StopAll(){
         LEFTOfLine
     };
 
+void Milestone_2(){
+    Drive(REVERSE, 0.25, 1);
+
+    StopAll();
+
+    Drive(FORWARD, 0.25, 10);
+
+    return;
+}
+
+
+//Adam's attempt at allowing movement in ANY DIRECTION (VERY ROUGH TEST)
+void DriveTEST(float Angle, float Speed, float Distance){
+    Angle = Angle * Radian_Conversion;
+
+    float frontmult, rightmult, leftmult;
+    frontmult = sin(Angle);
+    rightmult = sin(Angle - (2*(PI/3)));
+    leftmult = sin(Angle - (4*(PI/3)));
+
+    int frontcount, rightcount, leftcount;
+    frontcount = (Distance * BASECOUNT * frontmult);
+    rightcount = (Distance * BASECOUNT * rightmult);
+    leftcount = (Distance * BASECOUNT * leftmult);
+
+    //Prepping for actual moving loop to start
+    if(frontcount == 0){
+        frontcount = 1000;
+    }
+    if(rightcount == 0){
+        rightcount = 1000;
+    }
+    if(leftcount == 0){
+        leftcount = 1000;
+    }
+
+    front_encoder.ResetCounts();
+    right_encoder.ResetCounts();
+    left_encoder.ResetCounts();
+
+    frontdrive.SetPercent(-(Speed * frontmult));
+    rightdrive.SetPercent(-(Speed * rightmult));
+    leftdrive.SetPercent((-(Speed * leftmult)));
+
+    while(abs(front_encoder.Counts()) < abs(frontcount) && abs(right_encoder.Counts()) < abs(rightcount) && abs(left_encoder.Counts()) < abs(leftcount)){
+        //Keep moving until counts reached
+    }
+
+    StopAll();
+
+    return;
+}
 
 void ERCMain()
 
 {
     int x, y;
 
-    LCD.WriteLine("Waiting for start...");
-
     while(!LCD.Touch(&x, &y));
- 
-    LCD.Clear();
 
-    //startButton();
+    DriveTEST(0, 20.0, 6.0);
 
+    StopAll();
     
-    Drive(FORWARD, 0.30, 3);
+    /*Drive(FORWARD, 0.30, 3);
 
     LCD.WriteLine("Done!");
 
@@ -623,6 +657,6 @@ void ERCMain()
     LCD.Clear();
 
     Drive(RIGHT, 0.30, 3);
-    
+    */
  
 }
