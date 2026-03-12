@@ -116,8 +116,10 @@ void Compost_Set_Speed(double percent){
 
 
 #define START_LIGHT 1.5
-#define RED_LIGHT -0.5
-#define BLUE_LIGHT -0.3
+#define RED_LIGHT 1.75
+#define BLUE_LIGHT_MIN 1.75
+#define BLUE_LIGHT_MAX 2.5
+
 void startButton() {
     float startTime = TimeNow();
     float currentTime = 0;
@@ -375,19 +377,18 @@ void DriveXY(double xTarget, double yTarget, double speed)
     StopAll();
 }
 
-void RotateDegrees(double angleDeg, double speed)
+void RotateDegrees(float angleDeg, float speed)
 {
     // distance from robot center to wheel (inches)
     const double ROBOT_RADIUS = 4.05234;
-
     // Convert degrees to radians
-    double theta = angleDeg * PI / 180.0;
+    float theta = angleDeg * PI / 180.0;
 
     // Wheel travel distance required
-    double wheelDistance = ROBOT_RADIUS * fabs(theta);
+    float wheelDistance = ROBOT_RADIUS * fabs(theta);
 
     // Convert to encoder counts
-    double targetCounts = wheelDistance * R_ENCODE_P_IN;
+    float targetCounts = wheelDistance * R_ENCODE_P_IN;
 
     // Reset encoders
     right_encoder.ResetCounts();
@@ -395,15 +396,19 @@ void RotateDegrees(double angleDeg, double speed)
     front_encoder.ResetCounts();
 
     // Determine direction
-    double direction = (theta > 0) ? 1.0 : -1.0;
+    float direction = (theta > 0) ? 1.0 : -1.0;
 
     // All wheels spin the same direction for pure rotation
     rightdrive.SetPercent(direction * -speed);
     leftdrive.SetPercent(direction * -speed);
     frontdrive.SetPercent(direction * -speed);
 
+    while(abs(front_encoder.Counts()) < abs(targetCounts) && abs(right_encoder.Counts()) < abs(targetCounts) && abs(left_encoder.Counts()) < abs(targetCounts)){
+        //Keep moving until counts reached
+    }
+
     // Wait until wheels reach required rotation distance
-    while (true)
+    /*while (true)
     {
         double c1 = fabs(right_encoder.Counts());
         double c2 = fabs(left_encoder.Counts());
@@ -415,7 +420,7 @@ void RotateDegrees(double angleDeg, double speed)
             break;
 
         Sleep(0.005);
-    }
+    }*/
 
     StopAll();
 }
@@ -579,17 +584,6 @@ void StopAll(){
         LEFTOfLine
     };
 
-void Milestone_2(){
-    Drive(REVERSE, 0.25, 1);
-
-    StopAll();
-
-    Drive(FORWARD, 0.25, 10);
-
-    return;
-}
-
-
 //Adam's attempt at allowing movement in ANY DIRECTION (VERY ROUGH TEST)
 void DriveTEST(float Angle, float Speed, float Distance){
     Angle = Angle * Radian_Conversion;
@@ -643,20 +637,80 @@ void DriveTEST(float Angle, float Speed, float Distance){
     return;
 }
 
+int CDS_CHECK(){
+        LCD.Clear();
+        LCD.WriteLine(CdS_cell.Value());
+        Sleep(0.5);
+
+    if(CdS_cell.Value() < 1.75){
+        return 0; //Red
+    }
+        else if(CdS_cell.Value() > BLUE_LIGHT_MIN && CdS_cell.Value() < BLUE_LIGHT_MAX){
+        return 1; //Blue
+    }
+    else{
+        return 2; //Red
+    }
+
+}
+
+void Milestone_2(){
+    DriveTEST(180, 20.0, 1.0);
+
+    DriveTEST(0, 20.0, 1.0);
+
+    RotateDegrees(44.06, 25);
+
+    DriveTEST(0, 25.0, 3.0);
+
+    DriveTEST(90, 25.0, 1.0);
+
+    DriveTEST(0, 50, 30.75);
+
+    RotateDegrees((float) -80, 25);
+
+    DriveTEST(0, 50, 12.65);
+
+    //Detect Red v Blue
+    int Light = 2;
+
+    while(Light == 2){
+        Light = CDS_CHECK();
+    }
+
+    if(Light == 0){ //Red
+        DriveTEST(90, 20.0, 1.75);
+        DriveTEST(0, 20.0, 3.0);
+        Sleep(1.0);
+        DriveTEST(180, 20.0, 3.0);
+
+        return;
+    }
+
+    if(Light == 1){ //Blue
+        DriveTEST(-90, 20.0, 1.75);
+        DriveTEST(0, 20.0, 3.0);
+        Sleep(1.0);
+        DriveTEST(180, 20.0, 3.0);
+
+        return;
+    }
+}
+
 void ERCMain()
-
 {
-    int x, y;
+    while(CdS_cell.Value() > START_LIGHT){
+        LCD.Clear();
+        LCD.WriteLine(CdS_cell.Value());
+    }
+
+
+    Milestone_2();
+
     while(1){
-    while(!LCD.Touch(&x, &y));
-
-    DriveTEST(0, 20.0, 24.0);
-
-    StopAll();
-
-    DriveTEST(180, 20.0, 10.0);
-
-    StopAll();
+        LCD.Clear();
+        LCD.WriteLine(CdS_cell.Value());
+        Sleep(0.5);
     }
     /*Drive(FORWARD, 0.30, 3);
 
