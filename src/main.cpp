@@ -679,7 +679,7 @@ void Milestone_2(){
     }
 
     if(Light == 0){ //Red
-        DriveTEST(90, 20.0, 1.75);
+        DriveTEST(90, 20.0, 1.25);
         DriveTEST(0, 20.0, 3.0);
         Sleep(1.0);
         DriveTEST(180, 20.0, 3.0);
@@ -688,10 +688,10 @@ void Milestone_2(){
     }
 
     if(Light == 1){ //Blue
-        DriveTEST(-90, 20.0, 1.75);
-        DriveTEST(0, 20.0, 3.0);
+        DriveTEST(-90, 20.0, 1.25);
+        DriveTEST(0, 20.0, 5.0);
         Sleep(1.0);
-        DriveTEST(180, 20.0, 3.0);
+        DriveTEST(180, 20.0, 5.0);
 
         return;
     }
