@@ -669,7 +669,7 @@ void Milestone_2(){
 
     RotateDegrees((float) -80, 25);
 
-    DriveTEST(0, 50, 12.65);
+    DriveTEST(0, 50, 13.1);
 
     //Detect Red v Blue
     int Light = 2;
@@ -704,16 +704,16 @@ while (Light == 2)
 }
     
     if(Light == 0){ //Red
-        DriveTEST(90, 20.0, 1.25);
-        DriveTEST(0, 20.0, 3.0);
+        DriveTEST(90, 20.0, 1.0);
+        DriveTEST(0, 20.0, 5.0);
         Sleep(1.0);
-        DriveTEST(180, 20.0, 3.0);
+        DriveTEST(180, 20.0, 5.0);
 
         return;
     }
 
     if(Light == 1){ //Blue
-        DriveTEST(-90, 20.0, 1.25);
+        DriveTEST(-90, 20.0, 1.0);
         DriveTEST(0, 20.0, 5.0);
         Sleep(1.0);
         DriveTEST(180, 20.0, 5.0);
