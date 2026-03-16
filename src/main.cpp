@@ -258,19 +258,18 @@ void Drive(Direction dir, double speed, double distance)
 void DriveXY(double xTarget, double yTarget, double speed)
 {
     const double SQRT3 = 1.73205081;
-    const double POSITION_TOLERANCE = 0.03;
 
-    // Slow down near target
+    const double X_TOLERANCE = 0.10;
+    const double Y_TOLERANCE = 0.10;
+
     const double SLOWDOWN_RADIUS = 3.0;
     const double MIN_SLOW_SPEED_SCALE = 0.35;
 
-    // Ramp up at the beginning
-    const double RAMP_UP_TIME = 0.20;          // seconds
-    const double START_SPEED_SCALE = 0.5;     // do not start too low or wheels may not all move together
+    const double RAMP_UP_TIME = 0.20;
+    const double START_SPEED_SCALE = 0.5;
 
     const double MAX_DRIVE_TIME = 5.0;
 
-    // Total distance to target
     double distance = sqrt(xTarget * xTarget + yTarget * yTarget);
 
     if (distance < 0.001)
@@ -279,115 +278,117 @@ void DriveXY(double xTarget, double yTarget, double speed)
         return;
     }
 
-    // Unit direction toward target
-    double ux = xTarget / distance;
-    double uy = yTarget / distance;
-
-    // Reset encoders
     left_encoder.ResetCounts();    // wheel1 = bottom
     right_encoder.ResetCounts();   // wheel2 = right
     front_encoder.ResetCounts();   // wheel3 = left
 
     double startTime = TimeNow();
-
-    // Base wheel direction signs from commanded path direction
-    double baseVx = -ux;
-    double baseVy =  uy;
     double omega = 0.0;
-
-    double baseWheel1 = (-1.0 * baseVy + omega);
-    double baseWheel2 = ( 0.8660254 * baseVx + 0.5 * baseVy + omega);
-    double baseWheel3 = (-0.8660254 * baseVx + 0.5 * baseVy + omega);
-
-    double W1_SIGN = (baseWheel1 >= 0.0) ? 1.0 : -1.0;
-    double W2_SIGN = (baseWheel2 >= 0.0) ? 1.0 : -1.0;
-    double W3_SIGN = (baseWheel3 >= 0.0) ? 1.0 : -1.0;
 
     while (true)
     {
-        // Signed wheel travel in inches using your current convention
-        double s1 = W1_SIGN * fabs(left_encoder.Counts())  / R_ENCODE_P_IN;
-        double s2 = W2_SIGN * fabs(right_encoder.Counts()) / F_ENCODE_P_IN;
-        double s3 = W3_SIGN * fabs(front_encoder.Counts()) / L_ENCODE_P_IN;
+        // Signed wheel travel in inches
+        double s1 = (fabs(left_encoder.Counts())  / R_ENCODE_P_IN);
+        double s2 = (fabs(right_encoder.Counts()) / F_ENCODE_P_IN);
+        double s3 = (fabs(front_encoder.Counts()) / L_ENCODE_P_IN);
 
-        // Robot displacement estimate
+        // Recover signs from actual commanded wheel directions would be better,
+        // but keeping your current convention structure:
+        // If your current sign convention already works for pure-axis tests,
+        // keep using the signed version from your working code instead.
+
+        // Use your original signed wheel travel version:
+        double baseDistance = sqrt(xTarget * xTarget + yTarget * yTarget);
+        double ux0 = xTarget / baseDistance;
+        double uy0 = yTarget / baseDistance;
+
+        double baseVx = -ux0;
+        double baseVy =  uy0;
+
+        double baseWheel1 = (-1.0 * baseVy + omega);
+        double baseWheel2 = ( 0.8660254 * baseVx + 0.5 * baseVy + omega);
+        double baseWheel3 = (-0.8660254 * baseVx + 0.5 * baseVy + omega);
+
+        double W1_SIGN = (baseWheel1 >= 0.0) ? 1.0 : -1.0;
+        double W2_SIGN = (baseWheel2 >= 0.0) ? 1.0 : -1.0;
+        double W3_SIGN = (baseWheel3 >= 0.0) ? 1.0 : -1.0;
+
+        s1 *= W1_SIGN;
+        s2 *= W2_SIGN;
+        s3 *= W3_SIGN;
+
+        // Position estimate
         double dx = -(s2 - s3) / SQRT3;
         double dy = -(2.0 * s1 - s2 - s3) / 3.0;
 
-        // Position error
+        // Current error
         double ex = xTarget - dx;
         double ey = yTarget - dy;
         double error = sqrt(ex * ex + ey * ey);
 
-        // Straight-line progress
-        double progress = dx * ux + dy * uy;
+        double elapsed = TimeNow() - startTime;
 
-        // Stop condition
-        if ((progress >= distance) || (error <= POSITION_TOLERANCE) || ((TimeNow() - startTime) > MAX_DRIVE_TIME))
+        // Stop only when actual x/y target is reached, or timeout
+        if ((fabs(ex) <= X_TOLERANCE && fabs(ey) <= Y_TOLERANCE) ||
+            (elapsed > MAX_DRIVE_TIME))
         {
             StopAll();
             LCD.Clear();
             LCD.WriteLine("DriveXY done");
             LCD.Write("dx: "); LCD.WriteLine(dx);
             LCD.Write("dy: "); LCD.WriteLine(dy);
-            LCD.Write("p: ");  LCD.WriteLine(progress);
             LCD.Write("ex: "); LCD.WriteLine(ex);
             LCD.Write("ey: "); LCD.WriteLine(ey);
             LCD.Write("err: "); LCD.WriteLine(error);
             break;
         }
 
-        // ----------------------------
-        // Ramp-up scale at the beginning
-        // ----------------------------
-        double elapsed = TimeNow() - startTime;
+        // Ramp-up
         double rampScale = 1.0;
-
         if (elapsed < RAMP_UP_TIME)
         {
             rampScale = START_SPEED_SCALE +
                         (1.0 - START_SPEED_SCALE) * (elapsed / RAMP_UP_TIME);
         }
 
-        // ----------------------------
-        // Slowdown scale near the target
-        // ----------------------------
+        // Slowdown near target
         double slowScale = 1.0;
-
         if (error < SLOWDOWN_RADIUS)
         {
             slowScale = error / SLOWDOWN_RADIUS;
-
             if (slowScale < MIN_SLOW_SPEED_SCALE)
             {
                 slowScale = MIN_SLOW_SPEED_SCALE;
             }
         }
 
-        // Use whichever limit is smaller:
-        // early in move, rampScale controls
-        // near end, slowScale controls
         double speedScale = (rampScale < slowScale) ? rampScale : slowScale;
-
         double currentSpeed = speed * speedScale;
 
-        // Convert desired robot motion into your current command convention
-        double Vx = -currentSpeed * ux;
-        double Vy =  currentSpeed * uy;
+        // RE-AIM toward the remaining error, not the original path
+        double ux_cmd = 0.0;
+        double uy_cmd = 0.0;
 
-        // Kiwi drive wheel commands
+        if (error > 0.0001)
+        {
+            ux_cmd = ex / error;
+            uy_cmd = ey / error;
+        }
+
+        double Vx = -currentSpeed * ux_cmd;
+        double Vy =  currentSpeed * uy_cmd;
+
         double wheel1 = (-1.0 * Vy + omega);
         double wheel2 = ( 0.8660254 * Vx + 0.5 * Vy + omega);
         double wheel3 = (-0.8660254 * Vx + 0.5 * Vy + omega);
 
-        leftdrive.SetPercent(-wheel1);    // bottom wheel
-        rightdrive.SetPercent(-wheel2);   // right wheel
-        frontdrive.SetPercent(-wheel3);   // left wheel
+        leftdrive.SetPercent(-wheel1);
+        rightdrive.SetPercent(-wheel2);
+        frontdrive.SetPercent(-wheel3);
 
         Sleep(0.005);
     }
 }
-
 void RotateDegrees(float angleDeg, float speed)
 {
     // distance from robot center to wheel (inches)
@@ -719,21 +720,21 @@ void ERCMain()
 
  
     while(!LCD.Touch(&x, &y));
-    DriveXY(7.5,0,50);
+    DriveXY(7.5,0,75);
     while(!LCD.Touch(&x, &y));
-    DriveXY(0,7.5,50);
+    DriveXY(0,7.5,75);
     while(!LCD.Touch(&x, &y));
-    DriveXY(-7.5,0,50);
+    DriveXY(-7.5,0,75);
     while(!LCD.Touch(&x, &y));
-    DriveXY(0,-7.5,50);
+    DriveXY(0,-7.5,75);
     while(!LCD.Touch(&x, &y));
-    DriveXY(10,5,50);
+    DriveXY(10,5,75);
     while(!LCD.Touch(&x, &y));
-    DriveXY(-3,8,50);
+    DriveXY(-3,8,75);
     while(!LCD.Touch(&x, &y));
-    DriveXY(1,8,50);
+    DriveXY(-1,8,75);
     while(!LCD.Touch(&x, &y));
-    DriveXY(6,-2,50);
+    DriveXY(8,-2,75);
 
     /*Drive(FORWARD, 0.30, 3);
 
