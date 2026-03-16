@@ -258,13 +258,21 @@ void Drive(Direction dir, double speed, double distance)
 void DriveXY(double xTarget, double yTarget, double speed)
 {
     const double SQRT3 = 1.73205081;
-    const double POSITION_TOLERANCE = 0.25;
+    const double POSITION_TOLERANCE = 0.03;
 
-    
+    // Slow down near target
+    const double SLOWDOWN_RADIUS = 3.0;
+    const double MIN_SLOW_SPEED_SCALE = 0.35;
+
+    // Ramp up at the beginning
+    const double RAMP_UP_TIME = 0.20;          // seconds
+    const double START_SPEED_SCALE = 0.5;     // do not start too low or wheels may not all move together
+
+    const double MAX_DRIVE_TIME = 5.0;
+
     // Total distance to target
     double distance = sqrt(xTarget * xTarget + yTarget * yTarget);
 
-    // Prevent divide by zero
     if (distance < 0.001)
     {
         StopAll();
@@ -275,56 +283,46 @@ void DriveXY(double xTarget, double yTarget, double speed)
     double ux = xTarget / distance;
     double uy = yTarget / distance;
 
-    // Convert desired robot motion into your CURRENT command convention
-    double Vx = -speed * ux;
-    double Vy =  speed * uy;
-    double omega = 0.0;
-
-    // Kiwi drive forward kinematics
-    // wheel1 = bottom
-    // wheel2 = right
-    // wheel3 = left
-    double wheel1 = (-1.0 * Vy + omega);
-    double wheel2 = ( 0.8660254 * Vx + 0.5 * Vy + omega);
-    double wheel3 = (-0.8660254 * Vx + 0.5 * Vy + omega);
-
-    // Signed wheel travel should follow the commanded wheel direction
-    double W1_SIGN = (wheel1 >= 0.0) ? 1.0 : -1.0;
-    double W2_SIGN = (wheel2 >= 0.0) ? 1.0 : -1.0;
-    double W3_SIGN = (wheel3 >= 0.0) ? 1.0 : -1.0;
-
     // Reset encoders
     left_encoder.ResetCounts();    // wheel1 = bottom
     right_encoder.ResetCounts();   // wheel2 = right
     front_encoder.ResetCounts();   // wheel3 = left
 
-    // Start motors once and keep them fixed
-    leftdrive.SetPercent(-wheel1);    // bottom wheel
-    rightdrive.SetPercent(-wheel2);   // right wheel
-    frontdrive.SetPercent(-wheel3);   // left wheel
-
     double startTime = TimeNow();
-    const double MAX_DRIVE_TIME = 5.0;
+
+    // Base wheel direction signs from commanded path direction
+    double baseVx = -ux;
+    double baseVy =  uy;
+    double omega = 0.0;
+
+    double baseWheel1 = (-1.0 * baseVy + omega);
+    double baseWheel2 = ( 0.8660254 * baseVx + 0.5 * baseVy + omega);
+    double baseWheel3 = (-0.8660254 * baseVx + 0.5 * baseVy + omega);
+
+    double W1_SIGN = (baseWheel1 >= 0.0) ? 1.0 : -1.0;
+    double W2_SIGN = (baseWheel2 >= 0.0) ? 1.0 : -1.0;
+    double W3_SIGN = (baseWheel3 >= 0.0) ? 1.0 : -1.0;
 
     while (true)
     {
-        // Signed wheel travel in inches using your CURRENT convention
+        // Signed wheel travel in inches using your current convention
         double s1 = W1_SIGN * fabs(left_encoder.Counts())  / R_ENCODE_P_IN;
         double s2 = W2_SIGN * fabs(right_encoder.Counts()) / F_ENCODE_P_IN;
         double s3 = W3_SIGN * fabs(front_encoder.Counts()) / L_ENCODE_P_IN;
 
+        // Robot displacement estimate
         double dx = -(s2 - s3) / SQRT3;
         double dy = -(2.0 * s1 - s2 - s3) / 3.0;
 
-        // Progress along commanded straight-line direction
-        double progress = dx * ux + dy * uy;
-
-        // Position error to target
+        // Position error
         double ex = xTarget - dx;
         double ey = yTarget - dy;
         double error = sqrt(ex * ex + ey * ey);
 
-        // Hybrid stop condition
+        // Straight-line progress
+        double progress = dx * ux + dy * uy;
+
+        // Stop condition
         if ((progress >= distance) || (error <= POSITION_TOLERANCE) || ((TimeNow() - startTime) > MAX_DRIVE_TIME))
         {
             StopAll();
@@ -338,6 +336,53 @@ void DriveXY(double xTarget, double yTarget, double speed)
             LCD.Write("err: "); LCD.WriteLine(error);
             break;
         }
+
+        // ----------------------------
+        // Ramp-up scale at the beginning
+        // ----------------------------
+        double elapsed = TimeNow() - startTime;
+        double rampScale = 1.0;
+
+        if (elapsed < RAMP_UP_TIME)
+        {
+            rampScale = START_SPEED_SCALE +
+                        (1.0 - START_SPEED_SCALE) * (elapsed / RAMP_UP_TIME);
+        }
+
+        // ----------------------------
+        // Slowdown scale near the target
+        // ----------------------------
+        double slowScale = 1.0;
+
+        if (error < SLOWDOWN_RADIUS)
+        {
+            slowScale = error / SLOWDOWN_RADIUS;
+
+            if (slowScale < MIN_SLOW_SPEED_SCALE)
+            {
+                slowScale = MIN_SLOW_SPEED_SCALE;
+            }
+        }
+
+        // Use whichever limit is smaller:
+        // early in move, rampScale controls
+        // near end, slowScale controls
+        double speedScale = (rampScale < slowScale) ? rampScale : slowScale;
+
+        double currentSpeed = speed * speedScale;
+
+        // Convert desired robot motion into your current command convention
+        double Vx = -currentSpeed * ux;
+        double Vy =  currentSpeed * uy;
+
+        // Kiwi drive wheel commands
+        double wheel1 = (-1.0 * Vy + omega);
+        double wheel2 = ( 0.8660254 * Vx + 0.5 * Vy + omega);
+        double wheel3 = (-0.8660254 * Vx + 0.5 * Vy + omega);
+
+        leftdrive.SetPercent(-wheel1);    // bottom wheel
+        rightdrive.SetPercent(-wheel2);   // right wheel
+        frontdrive.SetPercent(-wheel3);   // left wheel
 
         Sleep(0.005);
     }
@@ -402,146 +447,6 @@ void StopAll(){
     return;
 
 }
-
-
-/* void humidifier() {
-    float startTime = TimeNow();
-    float condition = 0
-    float lightReading;
-    while(startTime < 3 & condition == 0) {
-        lightReading = CdS_Cell.Value();
-
-        if(lightReading < RED_LIGHT) {
-            Drive(RIGHT_R, 0.1, 2);
-            Drive(FORWARD, 0.1, 3);
-            condition = 1;
-        }
-
-        else if (lightReading < RED_LIGHT && lightReading > BLUE_LIGHT && condition == 0) {
-            Drive(LEFT_F, 0.1, 2);
-            Drive(Forward, 0.1, 3);
-            condition = 1; 
-        }
-        startTime = TimeNow();
-    }
-
-    if(condition == 0) {
-        Drive(RIGHT_R, 0.1, 2);
-        Drive(FORWARD, 0.1, 3);
-        condition = 1;
-    }
-} */
-
-
-/*void Course(){
-
-//567
-
-    //Reseting encoder counts
-
-    left_encoder.ResetCounts();
-
-    right_encoder.ResetCounts();
-
-
-
-    //Sets motors to 25% power
-
-    leftdrive.SetPercent(25.0);
-
-    rightdrive.SetPercent(25.0);
-
-
-
-    //Wait until encoder reaches 567 counts
-
-    while(left_encoder.Counts() < 567);
-
-
-
-    Stop();
-
-
-
-    Sleep(1.0);
-
-
-
-    Turn_Left();
-
-
-
-    Sleep(1.0);
-
-
-
-    //Reseting encoder counts
-
-    left_encoder.ResetCounts();
-
-    right_encoder.ResetCounts();
-
-
-
-    //Sets motors to 25% power
-
-    leftdrive.SetPercent(25.0);
-
-    rightdrive.SetPercent(25.0);
-
-
-
-    //Wait until encoder reaches 405 counts
-
-    while(left_encoder.Counts() < 405);
-
-
-
-    Stop();
-
-
-
-    Sleep(1.0);
-
-
-
-    Turn_Right();
-
-
-
-    Sleep(1.0);
-
-
-
-    //Reseting encoder counts
-
-    left_encoder.ResetCounts();
-
-    right_encoder.ResetCounts();
-
-
-
-    //Sets motors to 25% power
-
-    leftdrive.SetPercent(25.0);
-
-    rightdrive.SetPercent(25.0);
-
-
-
-    //Wait until encoder reaches 162 counts
-
-    while(left_encoder.Counts() < 162);
-
-
-
-    Stop();
-
-
-
-    return;
-
-}*/
 
 
     enum LineStates {
@@ -812,23 +717,24 @@ void ERCMain()
     RotateDegrees(45, 25);
     */
 
+ 
     while(!LCD.Touch(&x, &y));
-    DriveXY(5,0,50);
+    DriveXY(7.5,0,50);
     while(!LCD.Touch(&x, &y));
-    DriveXY(0,5,50);
+    DriveXY(0,7.5,50);
     while(!LCD.Touch(&x, &y));
-    DriveXY(-5,0,50);
+    DriveXY(-7.5,0,50);
     while(!LCD.Touch(&x, &y));
-    DriveXY(0,-5,50);
+    DriveXY(0,-7.5,50);
     while(!LCD.Touch(&x, &y));
-    DriveXY(5,5,50);
+    DriveXY(10,5,50);
     while(!LCD.Touch(&x, &y));
-    DriveXY(-5,5,50);
+    DriveXY(-3,8,50);
     while(!LCD.Touch(&x, &y));
-    DriveXY(-5,-5,50);
+    DriveXY(1,8,50);
     while(!LCD.Touch(&x, &y));
-    DriveXY(5,-5,50);
-    
+    DriveXY(6,-2,50);
+
     /*Drive(FORWARD, 0.30, 3);
 
     LCD.WriteLine("Done!");
