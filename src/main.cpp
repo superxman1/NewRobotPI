@@ -225,12 +225,13 @@ void Drive(Direction dir, double speed, double distance)
         double s3 = S3_SIGN * front_encoder.Counts() / L_ENCODE_P_IN;
 
         // True inverse kiwi kinematics
-        double dx = (s2 - s3) / SQRT3;
+        double dx = (s2 + s3) / SQRT3;
         double dy = ((-2.0 * s1) + s2 + s3) / 3.0;
 
         // Progress along commanded direction
-        double progress = dx * ux + dy * uy;
-
+        double px = dx * ux;
+        double py = dy * uy;
+        double progress = px + py;
         if (fabs(progress) >= distance)
         {
             StopAll();
@@ -240,6 +241,8 @@ void Drive(Direction dir, double speed, double distance)
             LCD.Write("s3: "); LCD.WriteLine(s3);
             LCD.Write("dx: "); LCD.WriteLine(dx);
             LCD.Write("dy: "); LCD.WriteLine(dy);
+            LCD.Write("px: "); LCD.WriteLine(px);
+            LCD.Write("py: "); LCD.WriteLine(py);
             LCD.Write("p: ");  LCD.WriteLine(progress);
             LCD.Write("rencoder: "); LCD.WriteLine(right_encoder.Counts());
             LCD.Write("lencoder: "); LCD.WriteLine(left_encoder.Counts());
@@ -252,125 +255,92 @@ void Drive(Direction dir, double speed, double distance)
 }
 
 
-/*
- * DriveXY()
- *
- * Drives the robot to a target displacement in the robot's local coordinate frame.
- *
- * Coordinate system:
- *  +X = forward
- *  -X = backward
- *  +Y = left
- *  -Y = right
- *
- * Inputs:
- *  xTarget  -> desired forward/backward travel (inches)
- *  yTarget  -> desired left/right travel (inches)
- *  speed    -> commanded drive speed (motor percent scale)
- */
-
 void DriveXY(double xTarget, double yTarget, double speed)
 {
-    const double SQRT3 = 1.73205081;      // √3 used in kiwi kinematics equations
-    const double POSITION_TOLERANCE = 0.15; // acceptable error in inches before stopping
+    const double SQRT3 = 1.73205081;
+    const double POSITION_TOLERANCE = 0.25;
 
-    // Compute total straight-line distance to the target point
+    
+    // Total distance to target
     double distance = sqrt(xTarget * xTarget + yTarget * yTarget);
 
-    /*
-      Normalize the desired motion vector.
-      (ux, uy) is the unit direction the robot should move in.
-     */
+    // Prevent divide by zero
+    if (distance < 0.001)
+    {
+        StopAll();
+        return;
+    }
+
+    // Unit direction toward target
     double ux = xTarget / distance;
     double uy = yTarget / distance;
 
-    /*
-     * Convert the unit direction into commanded robot-frame velocity.
-     * Vx = forward velocity component
-     * Vy = sideways velocity component
-     * omega = rotational velocity (not used here)
-     */
-    double Vx = speed * ux;
-    double Vy = speed * uy;
-    double omega = 0.0; // no rotation during this movement
+    // Convert desired robot motion into your CURRENT command convention
+    double Vx = -speed * ux;
+    double Vy =  speed * uy;
+    double omega = 0.0;
 
-    /*
-     * Kiwi forward kinematics:
-     * Convert robot motion (Vx, Vy, omega) into individual wheel commands.
-     *
-     * wheel1 -> right wheel
-     * wheel2 -> left wheel
-     * wheel3 -> front wheel
-     */
-    double wheel1 = (-1.0 * Vy + omega) * 100.0;               // bottom wheel
-    double wheel2 = ( 0.8660254 * Vx + 0.5 * Vy + omega) * 100.0; // right wheel
-    double wheel3 = (-0.8660254 * Vx + 0.5 * Vy + omega) * 100.0; // left wheel
-    
-    LCD.WriteLine(wheel1);
-    LCD.WriteLine(wheel2);      
-    LCD.WriteLine(wheel3);
+    // Kiwi drive forward kinematics
+    // wheel1 = bottom
+    // wheel2 = right
+    // wheel3 = left
+    double wheel1 = (-1.0 * Vy + omega);
+    double wheel2 = ( 0.8660254 * Vx + 0.5 * Vy + omega);
+    double wheel3 = (-0.8660254 * Vx + 0.5 * Vy + omega);
+
+    // Signed wheel travel should follow the commanded wheel direction
+    double W1_SIGN = (wheel1 >= 0.0) ? 1.0 : -1.0;
+    double W2_SIGN = (wheel2 >= 0.0) ? 1.0 : -1.0;
+    double W3_SIGN = (wheel3 >= 0.0) ? 1.0 : -1.0;
 
     // Reset encoders
-    right_encoder.ResetCounts(); // wheel1
-    left_encoder.ResetCounts();  // wheel2
-    front_encoder.ResetCounts(); // wheel3
+    left_encoder.ResetCounts();    // wheel1 = bottom
+    right_encoder.ResetCounts();   // wheel2 = right
+    front_encoder.ResetCounts();   // wheel3 = left
 
-    
+    // Start motors once and keep them fixed
+    leftdrive.SetPercent(-wheel1);    // bottom wheel
+    rightdrive.SetPercent(-wheel2);   // right wheel
+    frontdrive.SetPercent(-wheel3);   // left wheel
 
-    // Start motors
-    rightdrive.SetPercent(-wheel3);
-    leftdrive.SetPercent(-wheel1);
-    frontdrive.SetPercent(-wheel2);
+    double startTime = TimeNow();
+    const double MAX_DRIVE_TIME = 5.0;
 
-    /*
-     * Main control loop:
-     * Continuously estimate robot displacement from encoder readings
-     * and stop when the robot reaches the target point.
-     */
     while (true)
     {
-        /*
-         * Convert encoder counts into wheel travel distance (inches).
-         * Each encoder is divided by its counts-per-inch calibration value.
-         */
-        double s1 = right_encoder.Counts() / R_ENCODE_P_IN; // right wheel travel
-        double s2 = left_encoder.Counts()  / L_ENCODE_P_IN; // left wheel travel
-        double s3 = front_encoder.Counts() / F_ENCODE_P_IN; // front wheel travel
+        // Signed wheel travel in inches using your CURRENT convention
+        double s1 = W1_SIGN * fabs(left_encoder.Counts())  / R_ENCODE_P_IN;
+        double s2 = W2_SIGN * fabs(right_encoder.Counts()) / F_ENCODE_P_IN;
+        double s3 = W3_SIGN * fabs(front_encoder.Counts()) / L_ENCODE_P_IN;
 
-        /*
-         * Kiwi inverse kinematics:
-         * Convert wheel travel distances into robot displacement.
-         *
-         * dx = forward displacement
-         * dy = sideways displacement
-         */
-        double dx = (2.0 * s1 - s2 - s3) / 3.0;
-        double dy = (s2 - s3) / SQRT3;
+        double dx = -(s2 - s3) / SQRT3;
+        double dy = -(2.0 * s1 - s2 - s3) / 3.0;
 
-        /*
-         * Compute the remaining error between the robot's current position
-         * and the requested target position.
-         */
+        // Progress along commanded straight-line direction
+        double progress = dx * ux + dy * uy;
+
+        // Position error to target
         double ex = xTarget - dx;
         double ey = yTarget - dy;
-
-        // Euclidean distance from the target point
         double error = sqrt(ex * ex + ey * ey);
 
-        /*
-         * Stop once the robot is close enough to the target.
-         */
-        if (error <= POSITION_TOLERANCE)
+        // Hybrid stop condition
+        if ((progress >= distance) || (error <= POSITION_TOLERANCE) || ((TimeNow() - startTime) > MAX_DRIVE_TIME))
         {
+            StopAll();
+            LCD.Clear();
+            LCD.WriteLine("DriveXY done");
+            LCD.Write("dx: "); LCD.WriteLine(dx);
+            LCD.Write("dy: "); LCD.WriteLine(dy);
+            LCD.Write("p: ");  LCD.WriteLine(progress);
+            LCD.Write("ex: "); LCD.WriteLine(ex);
+            LCD.Write("ey: "); LCD.WriteLine(ey);
+            LCD.Write("err: "); LCD.WriteLine(error);
             break;
         }
 
-        // Small delay to prevent the loop from running excessively fast
         Sleep(0.005);
     }
-
-    // Stop all motors once the target position has been reached
-    StopAll();
 }
 
 void RotateDegrees(float angleDeg, float speed)
@@ -843,14 +813,21 @@ void ERCMain()
     */
 
     while(!LCD.Touch(&x, &y));
-    Drive(RIGHT_F, .5, 10.0);
+    DriveXY(5,0,50);
     while(!LCD.Touch(&x, &y));
-    Drive(RIGHT_R, .50, 10.0);
+    DriveXY(0,5,50);
     while(!LCD.Touch(&x, &y));
-    Drive(LEFT_F, .50, 10.0);
+    DriveXY(-5,0,50);
     while(!LCD.Touch(&x, &y));
-    Drive(LEFT_R, .50, 10.0);
-    
+    DriveXY(0,-5,50);
+    while(!LCD.Touch(&x, &y));
+    DriveXY(5,5,50);
+    while(!LCD.Touch(&x, &y));
+    DriveXY(-5,5,50);
+    while(!LCD.Touch(&x, &y));
+    DriveXY(-5,-5,50);
+    while(!LCD.Touch(&x, &y));
+    DriveXY(5,-5,50);
     
     /*Drive(FORWARD, 0.30, 3);
 
