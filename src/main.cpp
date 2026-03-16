@@ -116,9 +116,9 @@ void Compost_Set_Speed(double percent){
 
 
 #define START_LIGHT 1.5
-#define RED_LIGHT 1.75
-#define BLUE_LIGHT_MIN 1.75
-#define BLUE_LIGHT_MAX 2.5
+#define RED_LIGHT 2.0
+#define BLUE_LIGHT_MIN 2.0
+#define BLUE_LIGHT_MAX 2.6
 
 void startButton() {
     float startTime = TimeNow();
@@ -148,12 +148,12 @@ void Drive(Direction dir, double speed, double distance)
     {
     case FORWARD:
         ux = 1.0;  uy = 0.0;
-        Vx = speed;
+        Vx = -speed;
         break;
 
     case REVERSE:
         ux = -1.0; uy = 0.0;
-        Vx = -speed;
+        Vx = speed;
         break;
 
     case LEFT:
@@ -168,25 +168,25 @@ void Drive(Direction dir, double speed, double distance)
 
     case LEFT_F:
         ux = INV_SQRT2;  uy = -INV_SQRT2;
-        Vx = speed * INV_SQRT2;
+        Vx = -speed * INV_SQRT2;
         Vy = -speed * INV_SQRT2;
         break;
 
     case LEFT_R:
         ux = -INV_SQRT2; uy = -INV_SQRT2;
-        Vx = -speed * INV_SQRT2;
-        Vy =  -speed * INV_SQRT2;
+        Vx = speed * INV_SQRT2;
+        Vy = -speed * INV_SQRT2;
         break;
 
     case RIGHT_F:
         ux = INV_SQRT2;  uy = INV_SQRT2;
-        Vx = speed * INV_SQRT2;
+        Vx = -speed * INV_SQRT2;
         Vy = speed * INV_SQRT2;
         break;
 
     case RIGHT_R:
         ux = -INV_SQRT2; uy = INV_SQRT2;
-        Vx = -speed * INV_SQRT2;
+        Vx = speed * INV_SQRT2;
         Vy = speed * INV_SQRT2;
         break;
 
@@ -195,66 +195,62 @@ void Drive(Direction dir, double speed, double distance)
         return;
     }
 
-    // Kiwi drive forward kinematics: body command -> wheel commands
-    double wheel1 = (-1.0 * Vy + omega) * 100.0;               // bottom wheel
-    double wheel2 = ( 0.8660254 * Vx + 0.5 * Vy + omega) * 100.0; // right wheel
-    double wheel3 = (-0.8660254 * Vx + 0.5 * Vy + omega) * 100.0; // left wheel
-    
-    LCD.WriteLine(wheel1);
-    LCD.WriteLine(wheel2);      
-    LCD.WriteLine(wheel3);
+    // Kiwi drive forward kinematics
+    // wheel1 = bottom
+    // wheel2 = right
+    // wheel3 = left
+    double wheel1 = (-1.0 * Vy + omega) * 100.0;
+    double wheel2 = ( 0.8660254 * Vx + 0.5 * Vy + omega) * 100.0;
+    double wheel3 = (-0.8660254 * Vx + 0.5 * Vy + omega) * 100.0;
 
     // Reset encoders
-    right_encoder.ResetCounts(); // wheel1
-    left_encoder.ResetCounts();  // wheel2
-    front_encoder.ResetCounts(); // wheel3
+    left_encoder.ResetCounts();    // wheel1 = bottom
+    right_encoder.ResetCounts();   // wheel2 = right
+    front_encoder.ResetCounts();   // wheel3 = left
 
-    
-
-    // Start motors
-    rightdrive.SetPercent(-wheel3);
-    leftdrive.SetPercent(-wheel1);
-    frontdrive.SetPercent(-wheel2);
+    // Start motors using REAL physical mapping
+    leftdrive.SetPercent(-wheel1);    // bottom wheel
+    rightdrive.SetPercent(-wheel2);   // right wheel
+    frontdrive.SetPercent(-wheel3);   // left wheel
 
     while (true)
     {
-        // Convert signed encoder counts -> signed wheel travel in inches
-        double s1 = -left_encoder.Counts() / R_ENCODE_P_IN; // wheel1
-        double s2 = front_encoder.Counts()  / L_ENCODE_P_IN; // wheel2
-        double s3 = -right_encoder.Counts() / F_ENCODE_P_IN; // wheel3
+        // Encoder sign calibration constants
+        const double S1_SIGN = -1.0; // bottom wheel
+        const double S2_SIGN =  1.0; // right wheel
+        const double S3_SIGN =  1.0; // left wheel
 
+        double s1 = S1_SIGN * left_encoder.Counts()  / R_ENCODE_P_IN;
+        double s2 = S2_SIGN * right_encoder.Counts() / F_ENCODE_P_IN;
+        double s3 = S3_SIGN * front_encoder.Counts() / L_ENCODE_P_IN;
 
-        
-        // Inverse kiwi kinematics: wheel travel -> robot displacement
+        // True inverse kiwi kinematics
         double dx = (s2 - s3) / SQRT3;
         double dy = ((-2.0 * s1) + s2 + s3) / 3.0;
 
         // Progress along commanded direction
         double progress = dx * ux + dy * uy;
 
-        
-        if (progress >= distance)
+        if (fabs(progress) >= distance)
         {
+            StopAll();
             LCD.Clear();
-        LCD.Write("s1: "); LCD.WriteLine(s1);
-        LCD.Write("s2: "); LCD.WriteLine(s2);
-        LCD.Write("s3: "); LCD.WriteLine(s3);
-        LCD.Write("dx: "); LCD.WriteLine(dx);
-        LCD.Write("dy: "); LCD.WriteLine(dy);
-        LCD.Write("p: "); LCD.WriteLine(progress);
-        LCD.Write("rencoder: "); LCD.WriteLine(right_encoder.Counts());
-        LCD.Write("lencoder: "); LCD.WriteLine(left_encoder.Counts());
-        LCD.Write("fencoder: "); LCD.WriteLine(front_encoder.Counts());
-        //Sleep(.2);
-
+            LCD.Write("s1: "); LCD.WriteLine(s1);
+            LCD.Write("s2: "); LCD.WriteLine(s2);
+            LCD.Write("s3: "); LCD.WriteLine(s3);
+            LCD.Write("dx: "); LCD.WriteLine(dx);
+            LCD.Write("dy: "); LCD.WriteLine(dy);
+            LCD.Write("p: ");  LCD.WriteLine(progress);
+            LCD.Write("rencoder: "); LCD.WriteLine(right_encoder.Counts());
+            LCD.Write("lencoder: "); LCD.WriteLine(left_encoder.Counts());
+            LCD.Write("fencoder: "); LCD.WriteLine(front_encoder.Counts());
             break;
         }
 
         Sleep(0.005);
     }
-
-    StopAll();
 }
+
 
 /*
  * DriveXY()
@@ -642,7 +638,7 @@ int CDS_CHECK(){
         LCD.WriteLine(CdS_cell.Value());
         Sleep(0.3);
 
-    if(CdS_cell.Value() < 1.75){
+    if(CdS_cell.Value() < RED_LIGHT){
         return 0; //Red
     }
         else if(CdS_cell.Value() > BLUE_LIGHT_MIN && CdS_cell.Value() < BLUE_LIGHT_MAX){
@@ -653,6 +649,73 @@ int CDS_CHECK(){
     }
 
 }
+
+// Adam's attempt at allowing movement in ANY DIRECTION (VERY ROUGH TEST)
+int CDS_CHECK();
+
+bool DriveTEST_Light(float Angle, float Speed, float Distance){
+    int Light = 2;
+    Angle = Angle * Radian_Conversion;
+
+    // Sets a multiplier based on the angle of each wheel
+    float frontmult, rightmult, leftmult;
+    frontmult = sin(Angle);
+    rightmult = sin(Angle - (2*(PI/3)));
+    leftmult = sin(Angle - (4*(PI/3)));
+
+    // Determines the number of counts each wheel must travel
+    int frontcount, rightcount, leftcount;
+    frontcount = Distance * BASECOUNT * frontmult;
+    rightcount = Distance * BASECOUNT * rightmult;
+    leftcount = Distance * BASECOUNT * leftmult;
+
+    // Prepping for actual moving loop to start
+    if(frontcount == 0){
+        frontcount = 1000;
+    }
+    if(rightcount == 0){
+        rightcount = 1000;
+    }
+    if(leftcount == 0){
+        leftcount = 1000;
+    }
+
+    // Resets the encoders before moving
+    front_encoder.ResetCounts();
+    right_encoder.ResetCounts();
+    left_encoder.ResetCounts();
+
+    // Starting the motors
+    frontdrive.SetPercent(-(Speed * frontmult));
+    rightdrive.SetPercent(-(Speed * rightmult));
+    leftdrive.SetPercent(-(Speed * leftmult));
+
+    while(abs(front_encoder.Counts()) < abs(frontcount) &&
+          abs(right_encoder.Counts()) < abs(rightcount) &&
+          abs(left_encoder.Counts()) < abs(leftcount))
+    {
+        // Check CDS during movement
+        Light = CDS_CHECK();
+        if(CDS_CHECK() != 2){
+            StopAll();
+            return true; // light found
+        }
+        Sleep(0.05);
+    }
+
+    // Writing encoder counts to screen
+    LCD.Clear();
+    LCD.WriteLine(front_encoder.Counts());
+    LCD.WriteLine(right_encoder.Counts());
+    LCD.WriteLine(left_encoder.Counts());
+
+    // Stops the motors
+    StopAll();
+
+    return false; // move finished normally
+}
+
+
 
 void Milestone_2(){
     DriveTEST(180, 20.0, 1.0);
@@ -665,78 +728,130 @@ void Milestone_2(){
 
     DriveTEST(90, 25.0, 1.0);
 
-    DriveTEST(0, 50, 30.75);
+    DriveTEST(0, 50, 30.5);
 
-    RotateDegrees((float) -80, 25);
+    RotateDegrees((float) -87.5, 25);
 
-    DriveTEST(0, 50, 13.1);
+    DriveTEST(0, 50, 13.2);
 
-    //Detect Red v Blue
-    int Light = 2;
+    
+    double legLength = 0.1;
+    double legStep = 0.1;
+    double maxLegLength = 8.0;
+    double maxLRLegLength = .3;
+    double LRLen;
+    int Light = CDS_CHECK();
 
-double legLength = 0.25;
-double legStep = 0.25;
+    while (Light == 2 && legLength <= maxLegLength)
+    {
+        if(legLength > maxLRLegLength){
+            LRLen = maxLRLegLength;
+        } else {
+            LRLen = legLength;
+        }
+        DriveTEST(180, 20.0, legLength);
+        Light = CDS_CHECK();
+        if (Light != 2) break;
 
+        DriveTEST(90, 20.0, LRLen);
+        Light = CDS_CHECK();
+        if (Light != 2) break;
 
-while (Light == 2)
-{
-    Light = CDS_CHECK();
-    if (Light != 2) break;
-    DriveTEST(180, 20.0, legLength);
-    Light = CDS_CHECK();
-    if (Light != 2) break;
+        legLength += legStep;
 
-    DriveTEST(90, 20.0, legLength);
-    Light = CDS_CHECK();
-    if (Light != 2) break;
+        DriveTEST(0, 20.0, legLength);
+        Light = CDS_CHECK();
+        if (Light != 2) break;
 
-    legLength += legStep;
+        DriveTEST(270, 20.0, LRLen);
+        Light = CDS_CHECK();
+        if (Light != 2) break;
 
-    DriveTEST(0, 20.0, legLength);
-    Light = CDS_CHECK();
-    if (Light != 2) break;
-
-    DriveTEST(270, 20.0, legLength);
-    Light = CDS_CHECK();
-    if (Light != 2) break;
-
-    legLength += legStep;
-}
+        legLength += legStep;
+    }
+   
     
     if(Light == 0){ //Red
-        DriveTEST(90, 20.0, 1.0);
-        DriveTEST(0, 20.0, 5.0);
+        LCD.Clear();
+        LCD.WriteLine("Red Detected");
         Sleep(1.0);
+        DriveTEST(90, 20.0, .8);
+        DriveTEST(0, 20.0, 5.0);
+        /*
+        rightdrive.SetPercent(30);
+        leftdrive.SetPercent(30);
+        Sleep(2.0);
+        StopAll(); */
+        Sleep(1.0); 
         DriveTEST(180, 20.0, 5.0);
-
-        return;
+        DriveTEST(-90, 20.0, .8);
     }
 
     if(Light == 1){ //Blue
-        DriveTEST(-90, 20.0, 1.0);
-        DriveTEST(0, 20.0, 5.0);
+        LCD.Clear();
+        LCD.WriteLine("Blue Detected");
         Sleep(1.0);
+        DriveTEST(-90, 20.0, .8);
+        DriveTEST(0, 20.0, 5.0);
+        /*
+        rightdrive.SetPercent(30);
+        leftdrive.SetPercent(30);
+        Sleep(2.0);
+        StopAll(); */
+        Sleep(1.0);  
         DriveTEST(180, 20.0, 5.0);
-
-        return;
+        DriveTEST(90, 20.0, .8);
     }
+
+    DriveTEST(180, 20.0, 17.0);
+    
+    RotateDegrees(-95, 25);
+
+    DriveTEST(0, 50.0, 45.0);
+
+    DriveTEST(180, 20.0, 2.0);
+
+    DriveTEST(-90, 50.0, 10.0);
+}
+
+ void WaitForTouch()
+{
+    int x, y;
+
+    while (LCD.Touch(&x, &y)) {}     // wait for release
+    while (!LCD.Touch(&x, &y)) {}    // wait for press
+    while (LCD.Touch(&x, &y)) {}     // wait for release
 }
 
 void ERCMain()
 {
-    while(CdS_cell.Value() > START_LIGHT){
-        LCD.Clear();
-        LCD.WriteLine(CdS_cell.Value());
-    }
+    int x, y;
+    
+    /*
+    while(!LCD.Touch(&x, &y));
+    RotateDegrees(90, 25);
+    while(!LCD.Touch(&x, &y));
+    RotateDegrees(-90, 25);
+    while(!LCD.Touch(&x, &y));
+    RotateDegrees(45, 25);
+    while(!LCD.Touch(&x, &y));
+    RotateDegrees(90, 25);
+    while(!LCD.Touch(&x, &y));
+    RotateDegrees(180, 50);
+    while(!LCD.Touch(&x, &y));
+    RotateDegrees(45, 25);
+    */
 
-
-    Milestone_2();
-
-    while(1){
-        LCD.Clear();
-        LCD.WriteLine(CdS_cell.Value());
-        Sleep(0.5);
-    }
+    while(!LCD.Touch(&x, &y));
+    Drive(RIGHT_F, .5, 10.0);
+    while(!LCD.Touch(&x, &y));
+    Drive(RIGHT_R, .50, 10.0);
+    while(!LCD.Touch(&x, &y));
+    Drive(LEFT_F, .50, 10.0);
+    while(!LCD.Touch(&x, &y));
+    Drive(LEFT_R, .50, 10.0);
+    
+    
     /*Drive(FORWARD, 0.30, 3);
 
     LCD.WriteLine("Done!");
