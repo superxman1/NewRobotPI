@@ -389,10 +389,13 @@ void DriveXY(double xTarget, double yTarget, double speed)
         Sleep(0.005);
     }
 }
+
 void RotateDegrees(float angleDeg, float speed)
 {
-    // distance from robot center to wheel (inches)
-    const double ROBOT_RADIUS = 4.05234;
+    const float ROBOT_RADIUS = 3.91;          // distance from center to wheel, adjust if needed
+    const float MIN_SPEED = 12.0;              // adjust if needed
+    const float SLOWDOWN_COUNTS = 40.0;        // start slowing near end
+
     // Convert degrees to radians
     float theta = angleDeg * PI / 180.0;
 
@@ -408,31 +411,37 @@ void RotateDegrees(float angleDeg, float speed)
     front_encoder.ResetCounts();
 
     // Determine direction
-    float direction = (theta > 0) ? 1.0 : -1.0;
+    float direction = (theta > 0) ? 1.0f : -1.0f;
 
-    // All wheels spin the same direction for pure rotation
-    rightdrive.SetPercent(direction * -speed);
-    leftdrive.SetPercent(direction * -speed);
-    frontdrive.SetPercent(direction * -speed);
-
-    while(abs(front_encoder.Counts()) < abs(targetCounts) && abs(right_encoder.Counts()) < abs(targetCounts) && abs(left_encoder.Counts()) < abs(targetCounts)){
-        //Keep moving until counts reached
-    }
-
-    // Wait until wheels reach required rotation distance
-    /*while (true)
+    while (true)
     {
-        double c1 = fabs(right_encoder.Counts());
-        double c2 = fabs(left_encoder.Counts());
-        double c3 = fabs(front_encoder.Counts());
+        float c1 = fabs(right_encoder.Counts());
+        float c2 = fabs(left_encoder.Counts());
+        float c3 = fabs(front_encoder.Counts());
 
-        double avg = (c1 + c2 + c3) / 3.0;
+        float avgCounts = (c1 + c2 + c3) / 3.0f;
+        float remaining = targetCounts - avgCounts;
 
-        if (avg >= targetCounts)
+        if (remaining <= 0)
             break;
 
+        // Slow down near the target to reduce overshoot
+        float currentSpeed = speed;
+        if (remaining < SLOWDOWN_COUNTS)
+        {
+            float scale = remaining / SLOWDOWN_COUNTS;
+            if (scale < (MIN_SPEED / speed))
+                scale = MIN_SPEED / speed;
+
+            currentSpeed = speed * scale;
+        }
+
+        rightdrive.SetPercent(direction * -currentSpeed);
+        leftdrive.SetPercent(direction * -currentSpeed);
+        frontdrive.SetPercent(direction * -currentSpeed);
+
         Sleep(0.005);
-    }*/
+    }
 
     StopAll();
 }
@@ -718,7 +727,12 @@ void ERCMain()
     RotateDegrees(45, 25);
     */
 
- 
+    WaitForTouch();
+    RotateDegrees(360, 75);
+    WaitForTouch();
+    RotateDegrees(-360, 75);
+    
+    /*
     while(!LCD.Touch(&x, &y));
     DriveXY(7.5,0,75);
     while(!LCD.Touch(&x, &y));
@@ -735,6 +749,8 @@ void ERCMain()
     DriveXY(-1,8,75);
     while(!LCD.Touch(&x, &y));
     DriveXY(8,-2,75);
+
+    */
 
     /*Drive(FORWARD, 0.30, 3);
 
