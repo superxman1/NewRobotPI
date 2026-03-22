@@ -33,6 +33,7 @@ def run_pio(args, check=True):
 def fetch_latest_version_from_registry(pkg: str) -> str | None:
     """
     Uses PlatformIO CLI to search for the package and read its version.
+    Uses PlatformIO Registry API v3 to search for the package and read its version.
     """
     try:
         # We search by owner if the package has an owner prefix, e.g. "osu-eed/ERC2"
@@ -77,6 +78,27 @@ def fetch_latest_version_from_registry(pkg: str) -> str | None:
                 if m2:
                     return m2.group(1)
                     
+            owner, pkg_name = pkg.split("/", 1)
+            query = f'owner:"{owner}" "{pkg_name}"'
+        else:
+            pkg_name = pkg
+            query = f'"{pkg_name}"'
+            
+        url = "https://api.registry.platformio.org/v3/search?query=" + urllib.parse.quote(query)
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=10) as response:
+            data = json.loads(response.read().decode("utf-8"))
+            
+        # The search returns a list of items. Find the one matching the package name.
+        for item in data.get("items", []):
+            if item.get("name", "").lower() == pkg_name.lower():
+                version_info = item.get("version")
+                if version_info and "name" in version_info:
+                    return version_info["name"]
+                    
+    except Exception as e:
+        log(f"Could not fetch version from Registry API ({e}). Skipping auto-update.")
+        
     return None
 
 
