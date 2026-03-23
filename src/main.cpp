@@ -727,12 +727,6 @@ void ERCMain()
     RotateDegrees(45, 25);
     */
 
-    WaitForTouch();
-    RotateDegrees(360, 75);
-    WaitForTouch();
-    RotateDegrees(-360, 75);
-    
-    /*
     while(!LCD.Touch(&x, &y));
     DriveXY(7.5,0,75);
     while(!LCD.Touch(&x, &y));
@@ -749,8 +743,6 @@ void ERCMain()
     DriveXY(-1,8,75);
     while(!LCD.Touch(&x, &y));
     DriveXY(8,-2,75);
-
-    */
 
     /*Drive(FORWARD, 0.30, 3);
 
