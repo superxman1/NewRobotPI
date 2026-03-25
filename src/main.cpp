@@ -52,6 +52,7 @@ void simpleDrive(int speed, float time);
 void simpleReverse(int speed, float time);
 void startButton();
 void humidifier();
+void Milestone_3();
 
 /* void Drive_Forward();
 void Drive_Back();
@@ -720,18 +721,35 @@ void Milestone_2(){
     DriveTEST(-90, 50.0, 10.0);
 }
 
- void WaitForTouch()
+void WaitForTouch()
 {
     int x, y;
 
-    while (LCD.Touch(&x, &y)) {}     // wait for release
     while (!LCD.Touch(&x, &y)) {}    // wait for press
-    while (LCD.Touch(&x, &y)) {}     // wait for release
+
+    return;
 }
+
+void Milestone_3(){
+    WaitForTouch();
+    
+    //Start Button
+    startButton();
+    DriveTEST(180, 20.0, 1.0);
+    DriveTEST(0, 20.0, 1.0);
+
+    DriveXY(3,0,70);
+
+    DriveXY(0,5,70);
+
+    DriveXY(35, 0, 70);
+
+}
+ 
 
 void ERCMain()
 {
-    int x, y;
+    Milestone_3();
     
     /*
     while(!LCD.Touch(&x, &y));
@@ -748,22 +766,7 @@ void ERCMain()
     RotateDegrees(45, 25);
     */
 
-    while(!LCD.Touch(&x, &y));
-    DriveXY(7.5,0,75);
-    while(!LCD.Touch(&x, &y));
-    DriveXY(0,7.5,75);
-    while(!LCD.Touch(&x, &y));
-    DriveXY(-7.5,0,75);
-    while(!LCD.Touch(&x, &y));
-    DriveXY(0,-7.5,75);
-    while(!LCD.Touch(&x, &y));
-    DriveXY(10,5,75);
-    while(!LCD.Touch(&x, &y));
-    DriveXY(-3,8,75);
-    while(!LCD.Touch(&x, &y));
-    DriveXY(-1,8,75);
-    while(!LCD.Touch(&x, &y));
-    DriveXY(8,-2,75);
+
 
     /*Drive(FORWARD, 0.30, 3);
 
