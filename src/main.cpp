@@ -27,6 +27,9 @@
 //Compost Mechanism Constants
 #define Compost_Speed 25.0
 
+//Global Heading Variable
+double g_heading_deg = 90.0;
+
 //Define Motors, Servos, and Sensors here
 FEHMotor frontdrive(FEHMotor::Motor0,9.0); 
 FEHMotor rightdrive(FEHMotor::Motor1,9.0);
@@ -77,10 +80,7 @@ enum Direction{
     RIGHT_R
 };
 
-
-
-
-
+//Funciton prototypes
 
 void Drive(Direction dir, double speed, double distance); //takes input direction (see diagram), speed (in percent), and distance (inches)
 
@@ -95,16 +95,17 @@ void Turn_Left();
 
 //Pivot funtions
 void Pivot_Set_Angle(int degree);
+
 //Compost mechanism functions
 void Compost_Set_Speed(double percent);
-
-//void Course();
 
 //Pivot functions
 void Pivot_Set_Angle(int degree){
     arm.SetDegree(degree);
     return;
 }
+
+
 
 //Compost mechanism functions
 void Compost_Set_Speed(double percent){
@@ -113,7 +114,12 @@ void Compost_Set_Speed(double percent){
 }
 
  
-
+//Heading normilzation function 
+double NormalizeAngleDeg(double angle){
+    while (angle >= 360.0) angle -= 360.0;
+    while (angle < 0.0)    angle += 360.0;
+    return angle;
+}
 
 #define START_LIGHT 1.5
 #define RED_LIGHT 2.0
@@ -272,7 +278,7 @@ void DriveXY(double xTarget, double yTarget, double speed)
 
     double distance = sqrt(xTarget * xTarget + yTarget * yTarget);
 
-    if (distance < 0.001)
+    if (distance < 0.05)
     {
         StopAll();
         return;
@@ -390,6 +396,17 @@ void DriveXY(double xTarget, double yTarget, double speed)
     }
 }
 
+void DriveFieldXY(double fieldDx, double fieldDy, double speed)
+{
+    double h = g_heading_deg * PI / 180.0;
+
+    // Convert desired field movement into robot-frame movement
+    double forwardTarget = fieldDx * cos(h) + fieldDy * sin(h);
+    double rightTarget   = fieldDx * sin(h) - fieldDy * cos(h);
+
+    DriveXY(forwardTarget, rightTarget, speed);
+}
+
 void RotateDegrees(float angleDeg, float speed)
 {
     const float ROBOT_RADIUS = 3.91;          // distance from center to wheel, adjust if needed
@@ -444,6 +461,10 @@ void RotateDegrees(float angleDeg, float speed)
     }
 
     StopAll();
+
+    // Assuming positive RotateDegrees = CCW in field frame
+    g_heading_deg = NormalizeAngleDeg(g_heading_deg + angleDeg);
+    NormalizeAngleDeg(g_heading_deg); // Ensure heading stays within 0-360 range
 }
 
 void StopAll(){
