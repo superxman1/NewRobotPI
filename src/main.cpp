@@ -266,8 +266,8 @@ void DriveXY(double xTarget, double yTarget, double speed)
 {
     const double SQRT3 = 1.73205081;
 
-    const double X_TOLERANCE = 0.10;
-    const double Y_TOLERANCE = 0.10;
+    const double X_TOLERANCE = 0.20;
+    const double Y_TOLERANCE = 0.20;
 
     const double SLOWDOWN_RADIUS = 3.0;
     const double MIN_SLOW_SPEED_SCALE = 0.35;
@@ -336,7 +336,7 @@ void DriveXY(double xTarget, double yTarget, double speed)
         double elapsed = TimeNow() - startTime;
 
         // Stop only when actual x/y target is reached, or timeout
-        if ((fabs(ex) <= X_TOLERANCE && fabs(ey) <= Y_TOLERANCE) ||
+        if ((ex <= X_TOLERANCE && ey <= Y_TOLERANCE) ||
             (elapsed > MAX_DRIVE_TIME))
         {
             StopAll();
@@ -721,12 +721,43 @@ void Milestone_2(){
     DriveTEST(-90, 50.0, 10.0);
 }
 
+void DriveRightTime(float speed, float time)
+{
+    float Angle = 90.0 * Radian_Conversion;
+
+    // Kiwi wheel contributions (all 3 wheels active)
+    float frontmult = sin(Angle);
+    float rightmult = sin(Angle - (2 * PI / 3));
+    float leftmult  = sin(Angle - (4 * PI / 3));
+
+    // Set motor speeds
+    frontdrive.SetPercent((speed * frontmult));
+    rightdrive.SetPercent((speed * rightmult));
+    leftdrive.SetPercent(-(speed * leftmult));
+
+    Sleep(time);
+
+    StopAll();
+    
+    return;
+}
+
 void WaitForTouch()
 {
     int x, y;
 
     while (!LCD.Touch(&x, &y)) {}    // wait for press
 
+    return;
+}
+
+void BacktoWall(float time){
+    leftdrive.SetPercent(-50);
+    frontdrive.SetPercent(50);
+
+    Sleep(time);
+
+    StopAll();
     return;
 }
 
@@ -738,11 +769,24 @@ void Milestone_3(){
     DriveTEST(180, 20.0, 1.0);
     DriveTEST(0, 20.0, 1.0);
 
-    DriveXY(3,0,70);
+    RotateDegrees(-15, 25);
 
-    DriveXY(0,5,70);
+    DriveXY(6, 0, 75);
+    DriveXY(0, 5, 75);
 
-    DriveXY(35, 0, 70);
+    RotateDegrees(10, 75);
+
+    DriveXY(40, 0, 75);
+
+    RotateDegrees(-120, 75);
+
+    BacktoWall(1.5);
+
+    DriveTEST(210, 50, 5);
+
+    RotateDegrees(-15, 50);
+
+    BacktoWall(0.2);
 
 }
  
