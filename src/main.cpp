@@ -822,7 +822,7 @@ void Milestone_3(){
 
     Sleep(1.0);
 
-    Ramp(0.45);
+    Ramp(0.4);
 
     Sleep(1.0);
 
