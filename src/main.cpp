@@ -347,6 +347,9 @@ void DriveXY(double xTarget, double yTarget, double speed)
             LCD.Write("ex: "); LCD.WriteLine(ex);
             LCD.Write("ey: "); LCD.WriteLine(ey);
             LCD.Write("err: "); LCD.WriteLine(error);
+            LCD.Write("rencoder: "); LCD.WriteLine(right_encoder.Counts());
+            LCD.Write("lencoder: "); LCD.WriteLine(left_encoder.Counts());
+            LCD.Write("fencoder: "); LCD.WriteLine(front_encoder.Counts());
             break;
         }
 
@@ -761,6 +764,16 @@ void BacktoWall(float time){
     return;
 }
 
+void FronttoWall(float time){
+    leftdrive.SetPercent(50);
+    frontdrive.SetPercent(-50);
+
+    Sleep(time);
+
+    StopAll();
+    return;
+}
+
 void Milestone_3(){
     WaitForTouch();
     
@@ -788,6 +801,17 @@ void Milestone_3(){
 
     BacktoWall(0.2);
 
+    FronttoWall(1.31);
+
+    RotateDegrees(-30, 50);
+
+    DriveXY(8, 0, 35);
+
+    RotateDegrees(80, 65);
+
+    DriveXY(2.5, 0, 50);
+
+    RotateDegrees(-120,65);
 }
  
 
