@@ -625,8 +625,6 @@ bool DriveTEST_Light(float Angle, float Speed, float Distance){
     return false; // move finished normally
 }
 
-
-
 void Milestone_2(){
     DriveTEST(180, 20.0, 1.0);
 
@@ -774,6 +772,17 @@ void FronttoWall(float time){
     return;
 }
 
+void Ramp(float time){
+    rightdrive.SetPercent(75);
+    frontdrive.SetPercent(-75);
+
+    Sleep(time);
+
+    StopAll();
+
+    return;
+}
+
 void Milestone_3(){
     WaitForTouch();
     
@@ -789,7 +798,9 @@ void Milestone_3(){
 
     RotateDegrees(10, 75);
 
-    DriveXY(40, 0, 75);
+    //DriveXY(40, 0, 75);
+
+    Ramp(2.0);
 
     RotateDegrees(-120, 75);
 
@@ -801,20 +812,34 @@ void Milestone_3(){
 
     BacktoWall(0.2);
 
-    FronttoWall(1.31);
+    Sleep(1.0);
+
+    FronttoWall(1.15);
+
+    Sleep(1.0);
 
     RotateDegrees(-30, 50);
 
-    DriveXY(8, 0, 35);
+    Sleep(1.0);
+
+    Ramp(0.45);
+
+    Sleep(1.0);
+
+    DriveTEST(135, 25, 2);
+
+    Sleep(1.0);
 
     RotateDegrees(80, 65);
 
-    DriveXY(2.5, 0, 50);
+    Ramp(0.1);
 
-    RotateDegrees(-120,65);
+    RotateDegrees(-150, 50);
 }
  
+void Milestone_4(){
 
+}
 void ERCMain()
 {
     Milestone_3();
