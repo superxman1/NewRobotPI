@@ -306,12 +306,15 @@ void DriveXY(double xTarget, double yTarget, int speed)
     double yRemaining = yTarget;
     double elapsed = 0;
     
-    double dx, dy;
+    double ds1, ds2, ds3;
+    double prev_s1 = 0, prev_s2 = 0, prev_s3 = 0;
+    double dx = 0, dy = 0;
     double error;
 
-    double dtheta, current_heading, heading_error;
+    double dtheta, current_heading = 0, heading_error;
     double desired_heading = atan2(yTarget, xTarget) * (180.0 / PI);
-
+    double speedScale = 1;
+    
     //Starting timer for timeout
     double startTime = TimeNow();
 
@@ -319,9 +322,9 @@ void DriveXY(double xTarget, double yTarget, int speed)
     while (!(fabs(xRemaining) <= X_TOLERANCE && fabs(yRemaining) <= Y_TOLERANCE) && !(elapsed > MAX_DRIVE_TIME))
     {
         //Signed wheel travel in inches
-        double s1 = (fabs(left_encoder.Counts())  / R_ENCODE_P_IN);
-        double s2 = (fabs(right_encoder.Counts()) / F_ENCODE_P_IN);
-        double s3 = (fabs(front_encoder.Counts()) / L_ENCODE_P_IN);
+        double s1 = (left_encoder.Counts()  / R_ENCODE_P_IN);
+        double s2 = (right_encoder.Counts() / F_ENCODE_P_IN);
+        double s3 = (front_encoder.Counts() / L_ENCODE_P_IN);
 
         //Creates a unit normal vector for desired direction
         double baseDistance = sqrt(xTarget * xTarget + yTarget * yTarget);
@@ -329,13 +332,18 @@ void DriveXY(double xTarget, double yTarget, int speed)
         double baseVy = (yTarget / baseDistance);
 
         //Sets base power for each wheel using unit vector
+        
+        /*
         double baseWheel1 = -(baseVy + omega);
         double baseWheel2 = ((SIN60 * baseVx) + (COS60 * baseVy) + omega);
         double baseWheel3 = ((-SIN60 * baseVx) + (COS60 * baseVy) + omega);
+        */
 
         /*Defaulting signs to be positive, then checking baseWheel. If baseWheel is negative,
         it will change the respective sign to be negative, if not it will remian positive. Additionally
         changed W*_SIGN to be integers to save memory.*/
+        
+        /*
         int W1_SIGN = 1;
         int W2_SIGN = 1;
         int W3_SIGN = 1;
@@ -355,16 +363,26 @@ void DriveXY(double xTarget, double yTarget, int speed)
         s1 *= W1_SIGN;
         s2 *= W2_SIGN;
         s3 *= W3_SIGN;
+        */
 
         //Calculating an estimate of current x and y positions
-        dx = -(s2 - s3) / SQRT3;
-        dy = -(2.0 * s1 - s2 - s3) / 3.0;
+        //Start NEW
+        ds1 = s1 - prev_s1;
+        ds2 = s2 - prev_s2;
+        ds3 = s3 - prev_s3;
+
+        prev_s1 = s1;
+        prev_s2 = s2;
+        prev_s3 = s3;
+        //END NEW
+
+        dx += -(ds2 - ds3) / SQRT3;
+        dy += -(2.0 * ds1 - ds2 - ds3) / 3.0;
 
         //Correcting for changes in orientation
-        dtheta = (s1 + s2 + s3) / (3.0 * RADIUS);
-        static double current_heading = 0.0;
+        dtheta = (ds1 + ds2 + ds3) / (3.0 * RADIUS);
         current_heading += dtheta * (180.0 / PI);
-        heading_error = desired_heading - current_heading;
+        heading_error = current_heading - desired_heading;
 
         if (heading_error > 180){
             heading_error -= 360;
@@ -372,11 +390,7 @@ void DriveXY(double xTarget, double yTarget, int speed)
         if (heading_error < -180){
             heading_error += 360;
         }
-        const double kP_heading = 0.5; //NEEDS ADJUSTED
-        omega = kP_heading * heading_error;
-
-        if (omega > 20) omega = 20;
-        if (omega < -20) omega = -20;
+        
 
         //Calculating distance remaining in x and y directions
         xRemaining = xTarget - dx;
@@ -404,9 +418,15 @@ void DriveXY(double xTarget, double yTarget, int speed)
             }
         }
 
+        /*const double kP_heading = 0.05; //NEEDS ADJUSTED
+        omega = kP_heading * heading_error * speedScale;
+
+        if (omega > 10) omega = 10;
+        if (omega < -10) omega = -10;*/
+
         //Determines whether the robot needs to slow down or speed up
         //Default to slowScale, if condition is met, set to rampScale
-        double speedScale = slowScale;
+        speedScale = slowScale;
         if(rampScale < slowScale){
             speedScale = rampScale;
         }
@@ -459,6 +479,185 @@ void DriveXY(double xTarget, double yTarget, int speed)
     LCD.Write("lencoder: "); LCD.WriteLine(left_encoder.Counts());
     LCD.Write("fencoder: "); LCD.WriteLine(front_encoder.Counts());
 }
+
+void DriveXY_CHAT(double xTarget, double yTarget, int speed)
+{
+    const double X_TOLERANCE = 0.20;
+    const double Y_TOLERANCE = 0.20;
+
+    const double SLOWDOWN_RADIUS = 3.0;
+    const double MIN_SLOW_SPEED_SCALE = 0.35;
+
+    const double RAMP_UP_TIME = 0.20;
+    const double START_SPEED_SCALE = 0.5;
+
+    const double MAX_DRIVE_TIME = 5.0;
+
+    double distance = sqrt(xTarget * xTarget + yTarget * yTarget);
+    if (distance < 0.05)
+    {
+        StopAll();
+        return;
+    }
+
+    left_encoder.ResetCounts();
+    right_encoder.ResetCounts();
+    front_encoder.ResetCounts();
+
+    // Encoder tracking
+    double prev_raw1 = 0, prev_raw2 = 0, prev_raw3 = 0;
+
+    // Position
+    double dx = 0, dy = 0;
+
+    double xRemaining = xTarget;
+    double yRemaining = yTarget;
+    double error = distance;
+
+    double startTime = TimeNow();
+    double elapsed = 0;
+
+    // Direction inference
+    int sign1 = 1, sign2 = 1, sign3 = 1;
+
+    double prev_w1 = 0, prev_w2 = 0, prev_w3 = 0;
+
+    while (!(fabs(xRemaining) <= X_TOLERANCE && fabs(yRemaining) <= Y_TOLERANCE) &&
+           !(elapsed > MAX_DRIVE_TIME))
+    {
+        // -----------------------------
+        // 1. READ ENCODERS
+        // -----------------------------
+        double raw1 = left_encoder.Counts();
+        double raw2 = right_encoder.Counts();
+        double raw3 = front_encoder.Counts();
+
+        double d_raw1 = raw1 - prev_raw1;
+        double d_raw2 = raw2 - prev_raw2;
+        double d_raw3 = raw3 - prev_raw3;
+
+        prev_raw1 = raw1;
+        prev_raw2 = raw2;
+        prev_raw3 = raw3;
+
+        // -----------------------------
+        // 2. INFER DIRECTION
+        // -----------------------------
+        double motionLevel = fabs(prev_w1) + fabs(prev_w2) + fabs(prev_w3);
+
+        if (motionLevel > 5)
+        {
+            if (fabs(prev_w1) > 2) sign1 = (prev_w1 > 0 ? 1 : -1);
+            if (fabs(prev_w2) > 2) sign2 = (prev_w2 > 0 ? 1 : -1);
+            if (fabs(prev_w3) > 2) sign3 = (prev_w3 > 0 ? 1 : -1);
+        }
+
+        double ds1 = sign1 * (d_raw1 / R_ENCODE_P_IN);
+        double ds2 = sign2 * (d_raw2 / F_ENCODE_P_IN);
+        double ds3 = sign3 * (d_raw3 / L_ENCODE_P_IN);
+
+        // -----------------------------
+        // 3. POSITION UPDATE
+        // -----------------------------
+        double raw_dx = -(ds2 - ds3) / SQRT3;
+        double raw_dy = -(2.0 * ds1 - ds2 - ds3) / 3.0;
+
+        dx += raw_dx;
+        dy += raw_dy;
+
+        // -----------------------------
+        // 4. ERROR
+        // -----------------------------
+        xRemaining = xTarget - dx;
+        yRemaining = yTarget - dy;
+        error = sqrt(xRemaining * xRemaining + yRemaining * yRemaining);
+
+        // -----------------------------
+        // 5. SPEED PROFILE
+        // -----------------------------
+        elapsed = TimeNow() - startTime;
+
+        double rampScale = 1.0;
+        if (elapsed < RAMP_UP_TIME)
+        {
+            rampScale = START_SPEED_SCALE +
+                        (1.0 - START_SPEED_SCALE) * (elapsed / RAMP_UP_TIME);
+        }
+
+        double slowScale = 1.0;
+        if (error < SLOWDOWN_RADIUS)
+        {
+            slowScale = error / SLOWDOWN_RADIUS;
+            if (slowScale < MIN_SLOW_SPEED_SCALE)
+                slowScale = MIN_SLOW_SPEED_SCALE;
+        }
+
+        double speedScale = (rampScale < slowScale) ? rampScale : slowScale;
+        double currentSpeed = speed * speedScale;
+
+        // -----------------------------
+        // 6. TRANSLATION VECTOR
+        // -----------------------------
+        double Vx = 0, Vy = 0;
+
+        if (error > 0)
+        {
+            Vx = currentSpeed * (xRemaining / error);
+            Vy = currentSpeed * (yRemaining / error);
+        }
+
+        // -----------------------------
+        // 7. WHEEL KINEMATICS (FIXED)
+        // -----------------------------
+        double wheel1 = -Vy;                                // back
+        double wheel2 =  SIN60 * Vx + COS60 * Vy;            // right
+        double wheel3 = -SIN60 * Vx + COS60 * Vy;            // left
+
+        // Normalize
+        double maxVal = fmax(fabs(wheel1),
+                        fmax(fabs(wheel2), fabs(wheel3)));
+
+        if (maxVal > 100)
+        {
+            wheel1 *= 100.0 / maxVal;
+            wheel2 *= 100.0 / maxVal;
+            wheel3 *= 100.0 / maxVal;
+        }
+
+        // -----------------------------
+        // 8. DRIVE (adjust signs HERE if needed)
+        // -----------------------------
+        leftdrive.SetPercent(wheel1);
+        rightdrive.SetPercent(wheel2);
+        frontdrive.SetPercent(wheel3);
+
+        prev_w1 = wheel1;
+        prev_w2 = wheel2;
+        prev_w3 = wheel3;
+
+        Sleep(0.005);
+    }
+
+    StopAll();
+
+    // -----------------------------
+    // DEBUG
+    // -----------------------------
+    LCD.Clear();
+    LCD.WriteLine("DriveXY Results");
+
+    LCD.Write("dx: "); LCD.WriteLine(dx);
+    LCD.Write("dy: "); LCD.WriteLine(dy);
+
+    LCD.Write("xRem: "); LCD.WriteLine(xRemaining);
+    LCD.Write("yRem: "); LCD.WriteLine(yRemaining);
+    LCD.Write("err: "); LCD.WriteLine(error);
+
+    LCD.Write("L: "); LCD.WriteLine(left_encoder.Counts());
+    LCD.Write("R: "); LCD.WriteLine(right_encoder.Counts());
+    LCD.Write("F: "); LCD.WriteLine(front_encoder.Counts());
+}
+
 
 void DriveFieldXY(double fieldDx, double fieldDy, double speed)
 {
@@ -900,9 +1099,41 @@ void Milestone_3(){
 void Milestone_4(){
 
 }
+
+void Reset_Counts(){
+    right_encoder.ResetCounts();
+    left_encoder.ResetCounts();
+    front_encoder.ResetCounts();
+    return;
+}
+
+void Encoder_test(){
+    //Reset encoder counts
+    Reset_Counts();
+    
+    //Setting all motors to default forward
+    rightdrive.SetPercent(-25);
+    leftdrive.SetPercent(-25);
+    frontdrive.SetPercent(-25);
+
+    //Printing encoder counts every 0.1 seconds
+    while(true){
+        LCD.Clear();
+        LCD.Write("Front: "); LCD.Write(front_encoder.Counts());
+        LCD.Write("\nRight: "); LCD.Write(right_encoder.Counts());
+        LCD.Write("\nLeft: "); LCD.Write(left_encoder.Counts());
+
+        Sleep(0.1);
+    }
+}
+
 void ERCMain()
 {
-    Milestone_3();
+    int x, y;
+    while(!LCD.Touch(&x, &y));
+    DriveXY_CHAT(10, 0, 50);
+    DriveXY_CHAT(0, 10, 50);
+    DriveXY_CHAT(-10, 0, 50);
     
     /*
     while(!LCD.Touch(&x, &y));
