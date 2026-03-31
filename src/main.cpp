@@ -32,17 +32,22 @@
 //Compost Mechanism Constants
 #define Compost_Speed 25.0
 
-//Global Heading Variable
-double g_heading_deg = 90.0;
-
 //Define Motors, Servos, and Sensors here
 FEHMotor frontdrive(FEHMotor::Motor0,9.0); 
 FEHMotor rightdrive(FEHMotor::Motor1,9.0);
 FEHMotor leftdrive(FEHMotor::Motor2,9.0);
 
+FEHMotor LEFTMOTOR(FEHMotor::Motor0,8.78); 
+FEHMotor RIGHTMOTOR(FEHMotor::Motor1,9.0);
+FEHMotor BACKMOTOR(FEHMotor::Motor2,8.7);
+
 DigitalEncoder front_encoder(FEHIO::Pin10); 
 DigitalEncoder right_encoder(FEHIO::Pin9); 
 DigitalEncoder left_encoder(FEHIO::Pin8);
+
+DigitalEncoder LEFTENCODER(FEHIO::Pin9); 
+DigitalEncoder RIGHTENCODER(FEHIO::Pin10); 
+DigitalEncoder BACKENCODER(FEHIO::Pin8);
 
 FEHMotor compost(FEHMotor::Motor3,5.0);
 FEHServo arm(FEHServo::Servo0);
@@ -71,9 +76,22 @@ void Stop(); */
 #define L_ENCODE_P_IN ((318.0/7.874))
 #define F_ENCODE_P_IN ((318.0/7.874))
 
+
 // Encoder counts needed per degree of robot rotation.
 // Tune this value on your robot so angle turns are accurate.
 #define TURN_COUNTS_PER_DEG 1.0
+
+
+#define START_LIGHT 1.5
+#define RED_LIGHT 2.0
+#define BLUE_LIGHT_MIN 2.0
+#define BLUE_LIGHT_MAX 2.6
+
+void STOP(){
+    LEFTMOTOR.SetPercent(0);
+    RIGHTMOTOR.SetPercent(0);
+    BACKMOTOR.SetPercent(0);
+}
 
 //8 movement directions (cardinal + diagonals)
 enum Direction{
@@ -87,18 +105,149 @@ enum Direction{
     RIGHT_R
 };
 
-//Funciton prototypes
+//Defining Useful Trig Values
+#define RAD60 (PI/3)
 
-void Drive(Direction dir, double speed, double distance); //takes input direction (see diagram), speed (in percent), and distance (inches)
+float TRIG_CALULATIONS(float x, float y){
+    float drive_angle;
+    float left_angle, left_x_multiplier, left_y_multiplier;
+    float right_angle, right_x_multiplier, right_y_multiplier;
+    float back_angle, back_x_multiplier, back_y_multiplier;
+    float unit_direction_x, unit_direction_y;
+    
+    //Calculates the angle clockwise from the positive y-axis
+    drive_angle = atan2(x,y);
+    
+    //calculates a unit vector for intended direction
+    unit_direction_x = sin(drive_angle);
+    unit_direction_y = cos(drive_angle);
 
-void StopAll(); //stops the motion of all motors
+    //Calculates angle used to determine x and y components of wheel forces
+    left_angle = drive_angle + RAD60;
+    right_angle = drive_angle + RAD60;
+    back_angle = drive_angle;
 
-void Stop(FEHMotor &motor); //stops the motion of a specific motor
+    //Calculating Trig values for wheel power calculations
+    left_x_multiplier = cos(left_angle);
+    left_y_multiplier = sin(left_angle);
 
-void Turn_Right(double angle_deg, double speed);
-void Turn_Left(double angle_deg, double speed);
-void Turn_Right();
-void Turn_Left();
+    right_x_multiplier = cos(right_angle);
+    right_y_multiplier = sin(right_angle);
+
+    back_x_multiplier = cos(back_angle);
+    back_y_multiplier = sin(back_angle);
+}
+
+//Defining unit vector components for each wheel
+#define LEFT_X -0.5
+#define LEFT_Y (sin(-(2*(PI/3))))
+#define RIGHT_X -0.5
+#define RIGHT_Y (sin(2*(PI/3)))
+#define BACK_X 1
+#define BACK_Y 0
+
+//Calculates the x and y components of a unit direction vector in the intended direction of travel
+float drive_angle, unit_direction_x, unit_direction_y;
+void UNIT_DIRECTION_VECTOR(float x, float y){
+    //Calculates the angle clockwise from the positive y-axis
+    drive_angle = atan2(x,y);
+
+    //Calculates a unit vector for intended direction
+    unit_direction_x = sin(drive_angle);
+    unit_direction_y = cos(drive_angle);
+}
+
+//Calculates motor power based on dot product.
+float LEFT_POWER, RIGHT_POWER, BACK_POWER;
+void DOT_PRODUCT(int POWER){
+    LEFT_POWER = POWER * ((LEFT_X * unit_direction_x) + (LEFT_Y * unit_direction_y));
+    RIGHT_POWER = POWER * ((RIGHT_X * unit_direction_x) + (RIGHT_Y * unit_direction_y));
+    BACK_POWER = POWER * ((BACK_X * unit_direction_x) + (BACK_Y * unit_direction_y));
+}
+
+//Starts motors with specified percents
+void START_MOTORS(){
+    LEFTMOTOR.SetPercent(LEFT_POWER);
+    RIGHTMOTOR.SetPercent(RIGHT_POWER);
+    BACKMOTOR.SetPercent(BACK_POWER);
+}
+
+//Resets Encoder Counts to Zero
+void ENCODER_RESET(){
+    LEFTENCODER.ResetCounts();
+    RIGHTENCODER.ResetCounts();
+    BACKENCODER.ResetCounts();
+}
+
+//Prints Encoder Values to the ERC Screen
+void ENCODER_PRINT(){
+    LCD.Write("LEFT: "); LCD.Write(LEFTENCODER.Counts());
+    LCD.Write("\nRIGHT:"); LCD.Write(RIGHTENCODER.Counts());
+    LCD.Write("\nBACK: "); LCD.Write(BACKENCODER.Counts());
+}
+
+//Keeps track of encoder values using directional logic
+int LEFT_COUNTS, RIGHT_COUNTS, BACK_COUNTS;
+void ENCODER_DIRECTIONAL_UPDATE(){
+    int LEFT_CYCLE_COUNTS, RIGHT_CYCLE_COUNTS, BACK_CYCLE_COUNTS;
+    
+    //Read encoder values from current cycle
+    LEFT_CYCLE_COUNTS = LEFTENCODER.Counts();
+    RIGHT_CYCLE_COUNTS = RIGHTENCODER.Counts();
+    BACK_CYCLE_COUNTS = BACKENCODER.Counts();
+
+    if(LEFT_POWER < 0){
+        LEFT_COUNTS -= LEFT_CYCLE_COUNTS;
+    }
+
+    if(LEFT_POWER > 0){
+        LEFT_COUNTS += LEFT_CYCLE_COUNTS;
+    }
+
+    if(RIGHT_POWER < 0){
+        RIGHT_COUNTS -= RIGHT_CYCLE_COUNTS;
+    }
+
+    if(RIGHT_POWER > 0){
+        RIGHT_COUNTS += RIGHT_CYCLE_COUNTS;
+    }
+
+    if(BACK_POWER < 0){
+        BACK_COUNTS -= BACK_CYCLE_COUNTS;
+    }
+
+    if(BACK_POWER > 0){
+        BACK_COUNTS += BACK_CYCLE_COUNTS;
+    }
+}
+
+//Calculates encoder coutns for each wheel
+int RIGHT_INTENDED_COUNTS, LEFT_INTENDED_COUNTS, BACK_INTENDED_COUNTS;
+void ENCODER_CALCULATE_COUNTS(float DISTANCE){
+
+}
+
+void ENCODER_CORRECTION(){
+
+}
+
+//Compiles many functions to drive
+void DRIVE(float x, float y, int POWER){
+    //Calculate direction and respective motor powers
+    UNIT_DIRECTION_VECTOR(x, y);
+    DOT_PRODUCT(POWER);
+    
+    //Resets Encoder Values
+    ENCODER_RESET();
+
+    //Start Motors
+    START_MOTORS();
+
+    //Run for 5 seconds
+    Sleep(5.0);
+
+    STOP();
+}
 
 //Pivot funtions
 void Pivot_Set_Angle(int degree);
@@ -106,32 +255,17 @@ void Pivot_Set_Angle(int degree);
 //Compost mechanism functions
 void Compost_Set_Speed(double percent);
 
-//Pivot functions
+//Pivot fnctions
 void Pivot_Set_Angle(int degree){
     arm.SetDegree(degree);
     return;
 }
-
-
 
 //Compost mechanism functions
 void Compost_Set_Speed(double percent){
     compost.SetPercent(percent);
     return;
 }
-
- 
-//Heading normilzation function 
-double NormalizeAngleDeg(double angle){
-    while (angle >= 360.0) angle -= 360.0;
-    while (angle < 0.0)    angle += 360.0;
-    return angle;
-}
-
-#define START_LIGHT 1.5
-#define RED_LIGHT 2.0
-#define BLUE_LIGHT_MIN 2.0
-#define BLUE_LIGHT_MAX 2.6
 
 void startButton() {
     float startTime = TimeNow();
@@ -142,534 +276,6 @@ void startButton() {
     while(CdS_cell.Value() > 1.5){}
     return;
 } 
-
-void Drive(Direction dir, double speed, double distance)
-{
-    // Commanded robot-frame direction unit vector
-    double ux = 0.0;
-    double uy = 0.0;
-
-    // Motor command components
-    double Vx = 0.0;
-    double Vy = 0.0;
-    double omega = 0.0;
-
-    switch (dir)
-    {
-    case FORWARD:
-        ux = 1.0;  uy = 0.0;
-        Vx = -speed;
-        break;
-
-    case REVERSE:
-        ux = -1.0; uy = 0.0;
-        Vx = speed;
-        break;
-
-    case LEFT:
-        ux = 0.0;  uy = -1.0;
-        Vy = -speed;
-        break;
-
-    case RIGHT:
-        ux = 0.0;  uy = 1.0;
-        Vy = speed;
-        break;
-
-    case LEFT_F:
-        ux = INV_SQRT2;  uy = -INV_SQRT2;
-        Vx = -speed * INV_SQRT2;
-        Vy = -speed * INV_SQRT2;
-        break;
-
-    case LEFT_R:
-        ux = -INV_SQRT2; uy = -INV_SQRT2;
-        Vx = speed * INV_SQRT2;
-        Vy = -speed * INV_SQRT2;
-        break;
-
-    case RIGHT_F:
-        ux = INV_SQRT2;  uy = INV_SQRT2;
-        Vx = -speed * INV_SQRT2;
-        Vy = speed * INV_SQRT2;
-        break;
-
-    case RIGHT_R:
-        ux = -INV_SQRT2; uy = INV_SQRT2;
-        Vx = speed * INV_SQRT2;
-        Vy = speed * INV_SQRT2;
-        break;
-
-    default:
-        LCD.WriteLine("Direction not specified during drive function");
-        return;
-    }
-
-    // Kiwi drive forward kinematics
-    // wheel1 = bottom
-    // wheel2 = right
-    // wheel3 = left
-    double wheel1 = (-1.0 * Vy + omega) * 100.0;
-    double wheel2 = ( 0.8660254 * Vx + 0.5 * Vy + omega) * 100.0;
-    double wheel3 = (-0.8660254 * Vx + 0.5 * Vy + omega) * 100.0;
-
-    // Reset encoders
-    left_encoder.ResetCounts();    // wheel1 = bottom
-    right_encoder.ResetCounts();   // wheel2 = right
-    front_encoder.ResetCounts();   // wheel3 = left
-
-    // Start motors using REAL physical mapping
-    leftdrive.SetPercent(-wheel1);    // bottom wheel
-    rightdrive.SetPercent(-wheel2);   // right wheel
-    frontdrive.SetPercent(-wheel3);   // left wheel
-
-    while (true)
-    {
-        // Encoder sign calibration constants
-        const double S1_SIGN = -1.0; // bottom wheel
-        const double S2_SIGN =  1.0; // right wheel
-        const double S3_SIGN =  1.0; // left wheel
-
-        double s1 = S1_SIGN * left_encoder.Counts()  / R_ENCODE_P_IN;
-        double s2 = S2_SIGN * right_encoder.Counts() / F_ENCODE_P_IN;
-        double s3 = S3_SIGN * front_encoder.Counts() / L_ENCODE_P_IN;
-
-        // True inverse kiwi kinematics
-        double dx = (s2 + s3) / SQRT3;
-        double dy = ((-2.0 * s1) + s2 + s3) / 3.0;
-
-        // Progress along commanded direction
-        double px = dx * ux;
-        double py = dy * uy;
-        double progress = px + py;
-        if (fabs(progress) >= distance)
-        {
-            StopAll();
-            LCD.Clear();
-            LCD.Write("s1: "); LCD.WriteLine(s1);
-            LCD.Write("s2: "); LCD.WriteLine(s2);
-            LCD.Write("s3: "); LCD.WriteLine(s3);
-            LCD.Write("dx: "); LCD.WriteLine(dx);
-            LCD.Write("dy: "); LCD.WriteLine(dy);
-            LCD.Write("px: "); LCD.WriteLine(px);
-            LCD.Write("py: "); LCD.WriteLine(py);
-            LCD.Write("p: ");  LCD.WriteLine(progress);
-            LCD.Write("rencoder: "); LCD.WriteLine(right_encoder.Counts());
-            LCD.Write("lencoder: "); LCD.WriteLine(left_encoder.Counts());
-            LCD.Write("fencoder: "); LCD.WriteLine(front_encoder.Counts());
-            break;
-        }
-
-        Sleep(0.005);
-    }
-}
-
-
-void DriveXY(double xTarget, double yTarget, int speed)
-{
-    //Sets an error tolerance for final position of robot after movement
-    const double X_TOLERANCE = 0.20;
-    const double Y_TOLERANCE = 0.20;
-
-    //Sets distance from target before starting to slowdown
-    //Sets a minimum percent of inputted speed
-    const double SLOWDOWN_RADIUS = 3.0;
-    const double MIN_SLOW_SPEED_SCALE = 0.35;
-
-
-    //Sets an initial speed (50% of input)
-    //Sets time to reach inputted speed
-    const double RAMP_UP_TIME = 0.20;
-    const double START_SPEED_SCALE = 0.5;
-
-    //Sets a time before timing out
-    const double MAX_DRIVE_TIME = 5.0;
-
-    //Calculates distance to target given x and y coordinates
-    double distance = sqrt(pow(xTarget, 2) + pow(yTarget, 2));
-
-    //If the input distance is less than 0.05 inches, don't move and return to main();
-    if (distance < 0.05)
-    {
-        StopAll();
-        return;
-    }
-
-    //Reset encoder counts before the movement begins.
-    left_encoder.ResetCounts();    // Wheel1 = back
-    right_encoder.ResetCounts();   // Wheel2 = right
-    front_encoder.ResetCounts();   // Wheel3 = left
-
-    double omega = 0.0;
-
-    //Setting xRemaining and yRemaining for initial condition check
-    double xRemaining = xTarget;
-    double yRemaining = yTarget;
-    double elapsed = 0;
-    
-    double ds1, ds2, ds3;
-    double prev_s1 = 0, prev_s2 = 0, prev_s3 = 0;
-    double dx = 0, dy = 0;
-    double error;
-
-    double dtheta, current_heading = 0, heading_error;
-    double desired_heading = atan2(yTarget, xTarget) * (180.0 / PI);
-    double speedScale = 1;
-    
-    //Starting timer for timeout
-    double startTime = TimeNow();
-
-    //While ex and ey are not within tolerance ranges, and max drive time has not been reached, the loop will continue
-    while (!(fabs(xRemaining) <= X_TOLERANCE && fabs(yRemaining) <= Y_TOLERANCE) && !(elapsed > MAX_DRIVE_TIME))
-    {
-        //Signed wheel travel in inches
-        double s1 = (left_encoder.Counts()  / R_ENCODE_P_IN);
-        double s2 = (right_encoder.Counts() / F_ENCODE_P_IN);
-        double s3 = (front_encoder.Counts() / L_ENCODE_P_IN);
-
-        //Creates a unit normal vector for desired direction
-        double baseDistance = sqrt(xTarget * xTarget + yTarget * yTarget);
-        double baseVx = -(xTarget / baseDistance);
-        double baseVy = (yTarget / baseDistance);
-
-        //Sets base power for each wheel using unit vector
-        
-        /*
-        double baseWheel1 = -(baseVy + omega);
-        double baseWheel2 = ((SIN60 * baseVx) + (COS60 * baseVy) + omega);
-        double baseWheel3 = ((-SIN60 * baseVx) + (COS60 * baseVy) + omega);
-        */
-
-        /*Defaulting signs to be positive, then checking baseWheel. If baseWheel is negative,
-        it will change the respective sign to be negative, if not it will remian positive. Additionally
-        changed W*_SIGN to be integers to save memory.*/
-        
-        /*
-        int W1_SIGN = 1;
-        int W2_SIGN = 1;
-        int W3_SIGN = 1;
-
-        if (baseWheel1 <= 0.0){
-            W1_SIGN = -1;
-        }
-        if (baseWheel2 <= 0.0){
-            W2_SIGN = -1;
-        }
-        if (baseWheel3 <= 0.0){
-            W3_SIGN = -1;
-        }
-
-        //Gives correct sign to each wheel
-        //May add this into the if statements above to save on lines and memory
-        s1 *= W1_SIGN;
-        s2 *= W2_SIGN;
-        s3 *= W3_SIGN;
-        */
-
-        //Calculating an estimate of current x and y positions
-        //Start NEW
-        ds1 = s1 - prev_s1;
-        ds2 = s2 - prev_s2;
-        ds3 = s3 - prev_s3;
-
-        prev_s1 = s1;
-        prev_s2 = s2;
-        prev_s3 = s3;
-        //END NEW
-
-        dx += -(ds2 - ds3) / SQRT3;
-        dy += -(2.0 * ds1 - ds2 - ds3) / 3.0;
-
-        //Correcting for changes in orientation
-        dtheta = (ds1 + ds2 + ds3) / (3.0 * RADIUS);
-        current_heading += dtheta * (180.0 / PI);
-        heading_error = current_heading - desired_heading;
-
-        if (heading_error > 180){
-            heading_error -= 360;
-        }
-        if (heading_error < -180){
-            heading_error += 360;
-        }
-        
-
-        //Calculating distance remaining in x and y directions
-        xRemaining = xTarget - dx;
-        yRemaining = yTarget - dy;
-        error = sqrt(pow(xRemaining, 2) + pow(yRemaining, 2));
-
-        //Calculating time elapsed to check for slow down and ramp up conditions
-        elapsed = TimeNow() - startTime;
-
-        //Ramp up conditions
-        double rampScale = 1.0;
-        if (elapsed < RAMP_UP_TIME)
-        {
-            rampScale = START_SPEED_SCALE + (1.0 - START_SPEED_SCALE) * (elapsed / RAMP_UP_TIME);
-        }
-
-        //Slowdown conditions
-        double slowScale = 1.0;
-        if (error < SLOWDOWN_RADIUS)
-        {
-            slowScale = error / SLOWDOWN_RADIUS;
-            if (slowScale < MIN_SLOW_SPEED_SCALE)
-            {
-                slowScale = MIN_SLOW_SPEED_SCALE;
-            }
-        }
-
-        /*const double kP_heading = 0.05; //NEEDS ADJUSTED
-        omega = kP_heading * heading_error * speedScale;
-
-        if (omega > 10) omega = 10;
-        if (omega < -10) omega = -10;*/
-
-        //Determines whether the robot needs to slow down or speed up
-        //Default to slowScale, if condition is met, set to rampScale
-        speedScale = slowScale;
-        if(rampScale < slowScale){
-            speedScale = rampScale;
-        }
-
-        //Sets current speed based on above statement
-        double currentSpeed = speed * speedScale;
-        
-        //Creates a new unit vector to update the direction based on error
-        double xCorrection;
-        double yCorrection;
-        if (error != 0)
-        {
-            xCorrection = xRemaining / error;
-            yCorrection = yRemaining / error;
-        }
-
-        //Calculates updated x and y speeds based on new unit vectors
-        double Vx = -currentSpeed * xCorrection;
-        double Vy =  currentSpeed * yCorrection;
-
-        //Calculates wheel speeds based on updated updated x and y speeds
-        double wheel1 = (-1.0 * Vy + omega);
-        double wheel2 = ((SIN60 * Vx) + (COS60 * Vy) + omega);
-        double wheel3 = ((-SIN60 * Vx) + (COS60 * Vy) + omega);
-
-        //Sets wheel speeds
-        leftdrive.SetPercent(-wheel1);
-        rightdrive.SetPercent(-wheel2);
-        frontdrive.SetPercent(-wheel3);
-
-        //Sleeps between loops
-        Sleep(0.005);
-        
-        //Calculating time elapsed to check for slow down and ramp up conditions
-        elapsed = TimeNow() - startTime;
-    }
-
-    //Stops all motors
-    StopAll();
-
-    //Prints all data from DriveXY to scree
-    LCD.Clear();
-    LCD.WriteLine("DriveXY Data");
-    LCD.Write("dx: "); LCD.WriteLine(dx);
-    LCD.Write("dy: "); LCD.WriteLine(dy);
-    LCD.Write("xRemaining: "); LCD.WriteLine(xRemaining);
-    LCD.Write("yRemaining: "); LCD.WriteLine(yRemaining);
-    LCD.Write("err: "); LCD.WriteLine(error);
-    LCD.Write("rencoder: "); LCD.WriteLine(right_encoder.Counts());
-    LCD.Write("lencoder: "); LCD.WriteLine(left_encoder.Counts());
-    LCD.Write("fencoder: "); LCD.WriteLine(front_encoder.Counts());
-}
-
-void DriveXY_CHAT(double xTarget, double yTarget, int speed)
-{
-    const double X_TOLERANCE = 0.20;
-    const double Y_TOLERANCE = 0.20;
-
-    const double SLOWDOWN_RADIUS = 3.0;
-    const double MIN_SLOW_SPEED_SCALE = 0.35;
-
-    const double RAMP_UP_TIME = 0.20;
-    const double START_SPEED_SCALE = 0.5;
-
-    const double MAX_DRIVE_TIME = 5.0;
-
-    double distance = sqrt(xTarget * xTarget + yTarget * yTarget);
-    if (distance < 0.05)
-    {
-        StopAll();
-        return;
-    }
-
-    left_encoder.ResetCounts();
-    right_encoder.ResetCounts();
-    front_encoder.ResetCounts();
-
-    // Encoder tracking
-    double prev_raw1 = 0, prev_raw2 = 0, prev_raw3 = 0;
-
-    // Position
-    double dx = 0, dy = 0;
-
-    double xRemaining = xTarget;
-    double yRemaining = yTarget;
-    double error = distance;
-
-    double startTime = TimeNow();
-    double elapsed = 0;
-
-    // Direction inference
-    int sign1 = 1, sign2 = 1, sign3 = 1;
-
-    double prev_w1 = 0, prev_w2 = 0, prev_w3 = 0;
-
-    while (!(fabs(xRemaining) <= X_TOLERANCE && fabs(yRemaining) <= Y_TOLERANCE) &&
-           !(elapsed > MAX_DRIVE_TIME))
-    {
-        // -----------------------------
-        // 1. READ ENCODERS
-        // -----------------------------
-        double raw1 = left_encoder.Counts();
-        double raw2 = right_encoder.Counts();
-        double raw3 = front_encoder.Counts();
-
-        double d_raw1 = raw1 - prev_raw1;
-        double d_raw2 = raw2 - prev_raw2;
-        double d_raw3 = raw3 - prev_raw3;
-
-        prev_raw1 = raw1;
-        prev_raw2 = raw2;
-        prev_raw3 = raw3;
-
-        // -----------------------------
-        // 2. INFER DIRECTION
-        // -----------------------------
-        double motionLevel = fabs(prev_w1) + fabs(prev_w2) + fabs(prev_w3);
-
-        if (motionLevel > 5)
-        {
-            if (fabs(prev_w1) > 2) sign1 = (prev_w1 > 0 ? 1 : -1);
-            if (fabs(prev_w2) > 2) sign2 = (prev_w2 > 0 ? 1 : -1);
-            if (fabs(prev_w3) > 2) sign3 = (prev_w3 > 0 ? 1 : -1);
-        }
-
-        double ds1 = sign1 * (d_raw1 / R_ENCODE_P_IN);
-        double ds2 = sign2 * (d_raw2 / F_ENCODE_P_IN);
-        double ds3 = sign3 * (d_raw3 / L_ENCODE_P_IN);
-
-        // -----------------------------
-        // 3. POSITION UPDATE
-        // -----------------------------
-        double raw_dx = -(ds2 - ds3) / SQRT3;
-        double raw_dy = -(2.0 * ds1 - ds2 - ds3) / 3.0;
-
-        dx += raw_dx;
-        dy += raw_dy;
-
-        // -----------------------------
-        // 4. ERROR
-        // -----------------------------
-        xRemaining = xTarget - dx;
-        yRemaining = yTarget - dy;
-        error = sqrt(xRemaining * xRemaining + yRemaining * yRemaining);
-
-        // -----------------------------
-        // 5. SPEED PROFILE
-        // -----------------------------
-        elapsed = TimeNow() - startTime;
-
-        double rampScale = 1.0;
-        if (elapsed < RAMP_UP_TIME)
-        {
-            rampScale = START_SPEED_SCALE +
-                        (1.0 - START_SPEED_SCALE) * (elapsed / RAMP_UP_TIME);
-        }
-
-        double slowScale = 1.0;
-        if (error < SLOWDOWN_RADIUS)
-        {
-            slowScale = error / SLOWDOWN_RADIUS;
-            if (slowScale < MIN_SLOW_SPEED_SCALE)
-                slowScale = MIN_SLOW_SPEED_SCALE;
-        }
-
-        double speedScale = (rampScale < slowScale) ? rampScale : slowScale;
-        double currentSpeed = speed * speedScale;
-
-        // -----------------------------
-        // 6. TRANSLATION VECTOR
-        // -----------------------------
-        double Vx = 0, Vy = 0;
-
-        if (error > 0)
-        {
-            Vx = currentSpeed * (xRemaining / error);
-            Vy = currentSpeed * (yRemaining / error);
-        }
-
-        // -----------------------------
-        // 7. WHEEL KINEMATICS (FIXED)
-        // -----------------------------
-        double wheel1 = -Vy;                                // back
-        double wheel2 =  SIN60 * Vx + COS60 * Vy;            // right
-        double wheel3 = -SIN60 * Vx + COS60 * Vy;            // left
-
-        // Normalize
-        double maxVal = fmax(fabs(wheel1),
-                        fmax(fabs(wheel2), fabs(wheel3)));
-
-        if (maxVal > 100)
-        {
-            wheel1 *= 100.0 / maxVal;
-            wheel2 *= 100.0 / maxVal;
-            wheel3 *= 100.0 / maxVal;
-        }
-
-        // -----------------------------
-        // 8. DRIVE (adjust signs HERE if needed)
-        // -----------------------------
-        leftdrive.SetPercent(wheel1);
-        rightdrive.SetPercent(wheel2);
-        frontdrive.SetPercent(wheel3);
-
-        prev_w1 = wheel1;
-        prev_w2 = wheel2;
-        prev_w3 = wheel3;
-
-        Sleep(0.005);
-    }
-
-    StopAll();
-
-    // -----------------------------
-    // DEBUG
-    // -----------------------------
-    LCD.Clear();
-    LCD.WriteLine("DriveXY Results");
-
-    LCD.Write("dx: "); LCD.WriteLine(dx);
-    LCD.Write("dy: "); LCD.WriteLine(dy);
-
-    LCD.Write("xRem: "); LCD.WriteLine(xRemaining);
-    LCD.Write("yRem: "); LCD.WriteLine(yRemaining);
-    LCD.Write("err: "); LCD.WriteLine(error);
-
-    LCD.Write("L: "); LCD.WriteLine(left_encoder.Counts());
-    LCD.Write("R: "); LCD.WriteLine(right_encoder.Counts());
-    LCD.Write("F: "); LCD.WriteLine(front_encoder.Counts());
-}
-
-
-void DriveFieldXY(double fieldDx, double fieldDy, double speed)
-{
-    double h = g_heading_deg * PI / 180.0;
-
-    // Convert desired field movement into robot-frame movement
-    double forwardTarget = fieldDx * cos(h) + fieldDy * sin(h);
-    double rightTarget   = fieldDx * sin(h) - fieldDy * cos(h);
-
-    DriveXY(forwardTarget, rightTarget, speed);
-}
 
 void RotateDegrees(float angleDeg, float speed)
 {
@@ -725,10 +331,6 @@ void RotateDegrees(float angleDeg, float speed)
     }
 
     StopAll();
-
-    // Assuming positive RotateDegrees = CCW in field frame
-    g_heading_deg = NormalizeAngleDeg(g_heading_deg + angleDeg);
-    NormalizeAngleDeg(g_heading_deg); // Ensure heading stays within 0-360 range
 }
 
 void StopAll(){
@@ -743,15 +345,8 @@ void StopAll(){
 
 }
 
-
-    enum LineStates {
-        MIDDLEOfLine,
-        RIGHTOfLine,
-        LEFTOfLine
-    };
-
 //Adam's attempt at allowing movement in ANY DIRECTION (VERY ROUGH TEST)
-void DriveTEST(float Angle, float Speed, float Distance){
+/*void DriveTEST(float Angle, float Speed, float Distance){
     Angle = Angle * Radian_Conversion;
 
     //Sets a multiplier based on the angle of each wheel
@@ -801,7 +396,7 @@ void DriveTEST(float Angle, float Speed, float Distance){
     StopAll();
 
     return;
-}
+}*/
 
 int CDS_CHECK(){
         LCD.Clear();
@@ -885,7 +480,7 @@ bool DriveTEST_Light(float Angle, float Speed, float Distance){
     return false; // move finished normally
 }
 
-void Milestone_2(){
+/*void Milestone_2(){
     DriveTEST(180, 20.0, 1.0);
 
     DriveTEST(0, 20.0, 1.0);
@@ -949,7 +544,7 @@ void Milestone_2(){
         rightdrive.SetPercent(30);
         leftdrive.SetPercent(30);
         Sleep(2.0);
-        StopAll(); */
+        StopAll(); 
         Sleep(1.0); 
         DriveTEST(180, 20.0, 5.0);
         DriveTEST(-90, 20.0, .8);
@@ -965,7 +560,7 @@ void Milestone_2(){
         rightdrive.SetPercent(30);
         leftdrive.SetPercent(30);
         Sleep(2.0);
-        StopAll(); */
+        StopAll(); 
         Sleep(1.0);  
         DriveTEST(180, 20.0, 5.0);
         DriveTEST(90, 20.0, .8);
@@ -980,7 +575,7 @@ void Milestone_2(){
     DriveTEST(180, 20.0, 2.0);
 
     DriveTEST(-90, 50.0, 10.0);
-}
+}*/
 
 void DriveRightTime(float speed, float time)
 {
@@ -1008,8 +603,6 @@ void WaitForTouch()
     int x, y;
 
     while (!LCD.Touch(&x, &y)) {}    // wait for press
-
-    return;
 }
 
 void BacktoWall(float time){
@@ -1043,7 +636,7 @@ void Ramp(float time){
     return;
 }
 
-void Milestone_3(){
+/*void Milestone_3(){
     WaitForTouch();
     
     //Start Button
@@ -1095,7 +688,7 @@ void Milestone_3(){
     Ramp(0.1);
 
     RotateDegrees(-150, 50);
-}
+}*/
  
 void Milestone_4(){
 
@@ -1169,41 +762,24 @@ void Encoder_test(){
     }
 }
 
+
 void ERCMain()
 {
-    Milestone_3();
-    
-    /*
-    while(!LCD.Touch(&x, &y));
-    RotateDegrees(90, 25);
-    while(!LCD.Touch(&x, &y));
-    RotateDegrees(-90, 25);
-    while(!LCD.Touch(&x, &y));
-    RotateDegrees(45, 25);
-    while(!LCD.Touch(&x, &y));
-    RotateDegrees(90, 25);
-    while(!LCD.Touch(&x, &y));
-    RotateDegrees(180, 50);
-    while(!LCD.Touch(&x, &y));
-    RotateDegrees(45, 25);
-    */
+    WaitForTouch();
 
+    ENCODER_RESET();
 
+    DRIVE(10, 0, 50);
 
-    /*Drive(FORWARD, 0.30, 3);
+    ENCODER_PRINT();
 
-    LCD.WriteLine("Done!");
-
-    LCD.WriteLine(right_encoder.Counts());
-    LCD.WriteLine(left_encoder.Counts());
-    LCD.WriteLine(front_encoder.Counts());
-
-
-    while(!LCD.Touch(&x, &y));
+    WaitForTouch();
 
     LCD.Clear();
 
-    Drive(RIGHT, 0.30, 3);
-    */
- 
+    ENCODER_RESET();
+
+    DRIVE(0, 10, 50);
+
+    ENCODER_PRINT();
 }
