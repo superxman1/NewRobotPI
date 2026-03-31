@@ -2,7 +2,7 @@
 #include <FEHIO.h>
 #include <FEHSD.h>
 #include <FEH.h>
-
+#include <FEHRCS.h>
 #include <Arduino.h>
 #include <math.h>
 
@@ -58,6 +58,7 @@ void simpleReverse(int speed, float time);
 void startButton();
 void humidifier();
 void Milestone_3();
+void lever();
 
 /* void Drive_Forward();
 void Drive_Back();
@@ -1100,6 +1101,47 @@ void Milestone_4(){
 
 }
 
+void lever() {
+    int correctLever = RCS.GetLever();
+    Pivot_Set_Angle(Lever_Up_ANGLE);
+
+    if(correctLever == 0) { // left lever
+        LCD.WriteLine("Left Lever");
+        //drive left to lever
+        Pivot_Set_Angle(Lever_Down_ANGLE);
+        Sleep(5.0);
+        //drive backwards slightly
+        Pivot_Set_Angle(Lever_Down_ANGLE);
+        //drive fowards slightly
+        Pivot_Set_Angle(Lever_Up_ANGLE);
+        // drive backwards and to the right to initial position (for consistency)
+    }
+    else if(correctLever == 1) { // middle lever
+        LCD.WriteLine("Middle Lever");
+        Pivot_Set_Angle(Lever_Down_ANGLE);
+        Sleep(5.0);
+        // drive backwards slightly
+        Pivot_Set_Angle(Lever_Down_ANGLE); // should be lower than previous one
+        //drive forwards slightly
+        Pivot_Set_Angle(Lever_Up_ANGLE);
+        //drive backward to initial position
+    }
+    else if(correctLever == 2) { //right lever
+        LCD.WriteLine("Right Lever");
+        //drive right to lever
+        Pivot_Set_Angle(Lever_Down_ANGLE);
+        Sleep(5.0);
+        //drive backwards slightly
+        Pivot_Set_Angle(Lever_Down_ANGLE); // lower than previous angle
+        // drive fowards slightly
+        Pivot_Set_Angle(Lever_Up_ANGLE);
+        //drive backward and then left to initial position (for consistency)
+    }
+
+    // correct heading?
+
+}
+
 void Reset_Counts(){
     right_encoder.ResetCounts();
     left_encoder.ResetCounts();
@@ -1129,11 +1171,7 @@ void Encoder_test(){
 
 void ERCMain()
 {
-    int x, y;
-    while(!LCD.Touch(&x, &y));
-    DriveXY_CHAT(10, 0, 50);
-    DriveXY_CHAT(0, 10, 50);
-    DriveXY_CHAT(-10, 0, 50);
+    Milestone_3();
     
     /*
     while(!LCD.Touch(&x, &y));
