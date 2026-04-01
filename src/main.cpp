@@ -13,6 +13,7 @@
 #define INV_SQRT2 0.70710678
 #define Radian_Conversion (PI/180)
 #define BASECOUNT 39
+#define COUNTS_PER_INCH 40.3860807722
 // Declare things like Motors, Servos, etc. here
 // For example:
 // FEHMotor leftMotor(FEHMotor::Motor0, 6.0);
@@ -108,6 +109,7 @@ enum Direction{
 //Defining Useful Trig Values
 #define RAD60 (PI/3)
 
+//UNUSED FUNCTION
 float TRIG_CALULATIONS(float x, float y){
     float drive_angle;
     float left_angle, left_x_multiplier, left_y_multiplier;
@@ -196,6 +198,7 @@ void ENCODER_DIRECTIONAL_UPDATE(){
     RIGHT_CYCLE_COUNTS = RIGHTENCODER.Counts();
     BACK_CYCLE_COUNTS = BACKENCODER.Counts();
 
+    //Determines sign for encoder values and adjusts manual count respectively
     if(LEFT_POWER < 0){
         LEFT_COUNTS -= LEFT_CYCLE_COUNTS;
     }
@@ -219,16 +222,109 @@ void ENCODER_DIRECTIONAL_UPDATE(){
     if(BACK_POWER > 0){
         BACK_COUNTS += BACK_CYCLE_COUNTS;
     }
+
+    ENCODER_RESET();
+}
+
+//Resets the manual encoder count
+void ENCODER_RESET_MANUAL(){
+    LEFT_COUNTS = 0;
+    RIGHT_COUNTS = 0;
+    BACK_COUNTS = 0;
 }
 
 //Calculates encoder coutns for each wheel
 int RIGHT_INTENDED_COUNTS, LEFT_INTENDED_COUNTS, BACK_INTENDED_COUNTS;
-void ENCODER_CALCULATE_COUNTS(float DISTANCE){
-
+void ENCODER_CALCULATE_COUNTS(float x, float y){
+    LEFT_INTENDED_COUNTS = ((LEFT_X * (COUNTS_PER_INCH * x)) + (LEFT_Y * ((COUNTS_PER_INCH) * y)));
+    RIGHT_INTENDED_COUNTS = ((RIGHT_X * (COUNTS_PER_INCH * x)) + (RIGHT_Y * ((COUNTS_PER_INCH) * y)));
+    BACK_INTENDED_COUNTS = ((BACK_X * (COUNTS_PER_INCH * x)) + (BACK_Y * ((COUNTS_PER_INCH) * y)));
 }
 
-void ENCODER_CORRECTION(){
+//Determines if end condition has been met
+int DRIVE_CONDITION(){
+    //Updates directional encoder values
+    ENCODER_DIRECTIONAL_UPDATE();
 
+    if(LEFT_INTENDED_COUNTS == 0){
+        LEFT_COUNTS = 0;
+    }
+
+    if(RIGHT_INTENDED_COUNTS == 0){
+        RIGHT_COUNTS = 0;
+    }
+
+    if(BACK_INTENDED_COUNTS == 0){
+        BACK_COUNTS = 0;
+    }
+
+    if(fabs(LEFT_COUNTS) <= fabs(LEFT_INTENDED_COUNTS) && fabs(RIGHT_COUNTS) <= fabs(RIGHT_INTENDED_COUNTS) && fabs(BACK_COUNTS) <= fabs(BACK_INTENDED_COUNTS)){
+        return 1;
+    }
+    else{
+        return 0;
+    }
+}
+
+//Corrects wheel power based on heading error
+void POWER_CORRECT(){
+    float LEFT_RATIO = 0, RIGHT_RATIO = 0, BACK_RATIO = 0;
+    float MAX_PERCENT;
+    float LEFT_CORRECTION_FACTOR, RIGHT_CORRECTION_FACTOR, BACK_CORRECTION_FACTOR;
+
+    //Calculates ratio of counts completed vs total intended counts
+    if(LEFT_INTENDED_COUNTS != 0){
+        LEFT_RATIO = fabs((float) LEFT_COUNTS/LEFT_INTENDED_COUNTS);
+    }
+    
+    if(RIGHT_INTENDED_COUNTS != 0){
+        RIGHT_RATIO = fabs((float) RIGHT_COUNTS/RIGHT_INTENDED_COUNTS);
+    }
+
+    if(BACK_INTENDED_COUNTS != 0){
+        BACK_RATIO = fabs((float) BACK_COUNTS/BACK_INTENDED_COUNTS);
+    }
+
+    //Detemines which encoder has compelted the highest percent of intended counts
+    MAX_PERCENT = max(LEFT_RATIO, max(RIGHT_RATIO, BACK_RATIO));
+
+    //Return if MAX_PERCENT is zero to avoid division by zero
+    if(MAX_PERCENT != 0){
+        //Calculates motor correction factors for all motors
+        if(LEFT_RATIO > 0){
+            LEFT_CORRECTION_FACTOR = fabs(MAX_PERCENT / LEFT_RATIO);
+        }
+        else{
+            LEFT_CORRECTION_FACTOR = 1;
+        }
+
+        if(RIGHT_RATIO > 0){
+            RIGHT_CORRECTION_FACTOR = fabs(MAX_PERCENT / RIGHT_RATIO);
+        }
+        else{
+            RIGHT_CORRECTION_FACTOR = 1;
+        }
+
+        if(BACK_RATIO > 0){
+            BACK_CORRECTION_FACTOR = fabs(MAX_PERCENT / BACK_RATIO);
+        }
+        else{
+            BACK_CORRECTION_FACTOR = 1;
+        }
+
+        //UPDATES MOTOR POWERS
+        LEFT_POWER *= LEFT_CORRECTION_FACTOR;
+        RIGHT_POWER *= RIGHT_CORRECTION_FACTOR;
+        BACK_POWER *= BACK_CORRECTION_FACTOR;
+    }
+}
+
+//Prints directional encoder values to ERC
+void ENCODER_PRINT_MANUAL(){
+    LCD.Clear();
+    LCD.Write("LEFT: "); LCD.Write(LEFT_COUNTS); LCD.Write("    INENDED: "); LCD.Write(LEFT_INTENDED_COUNTS);
+    LCD.Write("\nRIGHT:"); LCD.Write(RIGHT_COUNTS); LCD.Write("    INENDED: "); LCD.Write(RIGHT_INTENDED_COUNTS);
+    LCD.Write("\nBACK: "); LCD.Write(BACK_COUNTS); LCD.Write("    INENDED: "); LCD.Write(BACK_INTENDED_COUNTS);
 }
 
 //Compiles many functions to drive
@@ -238,15 +334,34 @@ void DRIVE(float x, float y, int POWER){
     DOT_PRODUCT(POWER);
     
     //Resets Encoder Values
+    ENCODER_RESET_MANUAL();
     ENCODER_RESET();
+
+    //Calulates encoder counts
+    ENCODER_CALCULATE_COUNTS(x, y);
 
     //Start Motors
     START_MOTORS();
 
-    //Run for 5 seconds
-    Sleep(5.0);
+    //Correcting and adjusting path until end condition is met
+    while(DRIVE_CONDITION() == 1){
+        //Update Directional Encoder Values
+        //ENCODER_DIRECTIONAL_UPDATE();
 
+        //Corrects heading based on directional encoding
+        POWER_CORRECT();
+
+        //Applies updated motor powers
+        START_MOTORS();
+
+        //Sleep between loops
+        Sleep(0.1);
+    }
+
+    //Get rid of this once encoders work
     STOP();
+
+    ENCODER_PRINT_MANUAL();
 }
 
 //Pivot funtions
@@ -414,9 +529,6 @@ int CDS_CHECK(){
     }
 
 }
-
-// Adam's attempt at allowing movement in ANY DIRECTION (VERY ROUGH TEST)
-int CDS_CHECK();
 
 bool DriveTEST_Light(float Angle, float Speed, float Distance){
     int Light = 2;
@@ -767,19 +879,9 @@ void ERCMain()
 {
     WaitForTouch();
 
-    ENCODER_RESET();
-
-    DRIVE(10, 0, 50);
-
-    ENCODER_PRINT();
+    DRIVE(30, 0, 50);
 
     WaitForTouch();
 
-    LCD.Clear();
-
-    ENCODER_RESET();
-
-    DRIVE(0, 10, 50);
-
-    ENCODER_PRINT();
+    DRIVE(10, 0, 50);
 }
