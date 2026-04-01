@@ -42,6 +42,10 @@ FEHMotor LEFTMOTOR(FEHMotor::Motor0,8.78);
 FEHMotor RIGHTMOTOR(FEHMotor::Motor1,9.0);
 FEHMotor BACKMOTOR(FEHMotor::Motor2,8.7);
 
+//declares a servo on servo port 3
+FEHServo BIG_SERVO(FEHServo::Servo0); 
+
+
 DigitalEncoder front_encoder(FEHIO::Pin10); 
 DigitalEncoder right_encoder(FEHIO::Pin9); 
 DigitalEncoder left_encoder(FEHIO::Pin8);
@@ -147,6 +151,14 @@ float TRIG_CALULATIONS(float x, float y){
 #define RIGHT_Y (sin(2*(PI/3)))
 #define BACK_X 1
 #define BACK_Y 0
+
+void SERVO_CALIBRATION(){
+    //Sets Min Value
+    BIG_SERVO.SetMin(500);
+
+    //Sets Max Value
+    BIG_SERVO.SetMax(1800);
+}
 
 //Calculates the x and y components of a unit direction vector in the intended direction of travel
 float drive_angle, unit_direction_x, unit_direction_y;
@@ -322,9 +334,9 @@ void POWER_CORRECT(){
 //Prints directional encoder values to ERC
 void ENCODER_PRINT_MANUAL(){
     LCD.Clear();
-    LCD.Write("LEFT: "); LCD.Write(LEFT_COUNTS); LCD.Write("    INENDED: "); LCD.Write(LEFT_INTENDED_COUNTS);
-    LCD.Write("\nRIGHT:"); LCD.Write(RIGHT_COUNTS); LCD.Write("    INENDED: "); LCD.Write(RIGHT_INTENDED_COUNTS);
-    LCD.Write("\nBACK: "); LCD.Write(BACK_COUNTS); LCD.Write("    INENDED: "); LCD.Write(BACK_INTENDED_COUNTS);
+    LCD.Write("LEFT: "); LCD.Write(LEFT_COUNTS); LCD.Write("    INT: "); LCD.Write(LEFT_INTENDED_COUNTS);
+    LCD.Write("\nRIGHT:"); LCD.Write(RIGHT_COUNTS); LCD.Write("    INT: "); LCD.Write(RIGHT_INTENDED_COUNTS);
+    LCD.Write("\nBACK: "); LCD.Write(BACK_COUNTS); LCD.Write("    INT: "); LCD.Write(BACK_INTENDED_COUNTS);
 }
 
 //Compiles many functions to drive
@@ -874,14 +886,71 @@ void Encoder_test(){
     }
 }
 
+void START_BUTTON(){
+    while(CdS_cell.Value() > RED_LIGHT);
+    
+    DRIVE(0, -1.5, 25);
+
+    DRIVE(0, 1.5, 25);
+}
+
+//Drives from start to Apple Basket
+void DRIVE_TO_APPLE_BASKET(){
+    DRIVE(0, 17, 50);
+    
+    //Rotate Robot to correct orientation
+    RotateDegrees(-45, 25);
+}
+
+//Completes the Apple Basket Task
+void APPLE_BASKET(){
+    //Drives from start to Apple Basket
+    DRIVE_TO_APPLE_BASKET();
+
+    //Set Big Servo to initial angle
+    BIG_SERVO.SetDegree(80);
+    
+    Sleep(1.0);
+
+    //Drive hook under basket handle
+    DRIVE(0, 3.5, 25);
+
+    //Pick up basket
+    BIG_SERVO.SetDegree(30);
+
+    Sleep(0.5);
+
+    BIG_SERVO.SetDegree(25);
+
+    Sleep(0.5);
+    
+    BIG_SERVO.SetDegree(20);
+
+    Sleep(0.5);
+    
+    BIG_SERVO.SetDegree(15);
+
+    Sleep(1.0);
+
+    //Drive to ramp wall
+    DRIVE(-5, 0, 30);
+    DRIVE(0, -18, 30);
+
+    Sleep(1.0);
+
+    //Drive up Ramp
+    DRIVE(35, 0, 50);
+
+    //Drive Against Wall
+    RotateDegrees(15, 25);
+    DRIVE(sqrt(3), -1, 25);
+}
 
 void ERCMain()
 {
-    WaitForTouch();
+    START_BUTTON();
 
-    DRIVE(30, 0, 50);
+    SERVO_CALIBRATION();
 
-    WaitForTouch();
-
-    DRIVE(10, 0, 50);
+    APPLE_BASKET();
 }
