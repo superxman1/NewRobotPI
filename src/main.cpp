@@ -939,15 +939,93 @@ void APPLE_BASKET(){
     Sleep(1.0);
 
     //Drive up Ramp
-    DRIVE(35, 0, 50);
+    DRIVE(35, 0, 25);
 
-    //Drive Against Wall
-    RotateDegrees(15, 25);
-    DRIVE(sqrt(3), -1, 25);
+    //CODE NEEDS TO BE FINISHED
+}
+
+void ROBOT_CALIBRATION(){
+    //Initializes the RCS system
+    RCS.InitializeTouchMenu("1130D6KKR");
+}
+
+//Flips lever down and up
+void FLIP_LEVER(){
+    //Flips lever down
+    BIG_SERVO.SetDegree(135);
+
+    //Move lever arm below fertilizer lever
+    RotateDegrees(-5, 10);
+    BIG_SERVO.SetDegree(145);
+    RotateDegrees(5, 10);
+
+    //Waits 5 seconds
+    Sleep(5.0);
+
+    //Flips lever up
+    BIG_SERVO.SetDegree(90); //ADJUST ANGLE
+}
+
+//Completes the Fertilizer Lever Task
+void LEVER(){
+    //NEED CODE TO DRIVE TO LEVERS
+
+    //Set servo arm to  prepare for flipping lever down
+    BIG_SERVO.SetDegree(60);
+
+    //Reads lever information
+    int CORRECT_LEVER = RCS.GetLever();
+
+    //Process for left lever
+    if(CORRECT_LEVER == 0){
+        //Prints correct lever to screen
+        LCD.Clear();
+        LCD.WriteLine("LEFT LEVER READ");
+
+        //Sleep for testing
+        //DELETE LATER
+        Sleep(1.0);
+
+        //Align with left lever
+        DRIVE(-2, 0, 25);
+
+        FLIP_LEVER();
+    }
+
+    //Process for middle lever
+    if(CORRECT_LEVER == 1){
+        //Prints correct lever to screen
+        LCD.Clear();
+        LCD.WriteLine("MIDDLE LEVER READ");
+
+        //Sleep for testing
+        //DELETE LATER
+        Sleep(1.0);
+
+        FLIP_LEVER();
+    }
+
+    //Process for right lever
+    if(CORRECT_LEVER == 2){
+        //Prints correct lever to screen
+        LCD.Clear();
+        LCD.WriteLine("RIGHT LEVER READ");
+
+        //Sleep for testing
+        //DELETE LATER
+        Sleep(1.0);
+
+        //Align with right lever
+        DRIVE(2, 0, 25);
+
+        FLIP_LEVER();
+    }
 }
 
 void ERCMain()
 {
+    ROBOT_CALIBRATION();
+
     START_BUTTON();
 
     SERVO_CALIBRATION();
