@@ -33,30 +33,21 @@
 //Compost Mechanism Constants
 #define Compost_Speed 25.0
 
-//Define Motors, Servos, and Sensors here
-FEHMotor frontdrive(FEHMotor::Motor0,9.0); 
-FEHMotor rightdrive(FEHMotor::Motor1,9.0);
-FEHMotor leftdrive(FEHMotor::Motor2,9.0);
-
+//Declaring DC Motors
 FEHMotor LEFTMOTOR(FEHMotor::Motor0,8.78); 
 FEHMotor RIGHTMOTOR(FEHMotor::Motor1,9.0);
 FEHMotor BACKMOTOR(FEHMotor::Motor2,8.7);
 
-//declares a servo on servo port 3
-FEHServo BIG_SERVO(FEHServo::Servo0); 
+//Declaring Servo Motors
+FEHServo BIG_SERVO(FEHServo::Servo0);
+FEHServo CONTINUOUS_SERVO(FEHServo::Servo1);
 
-
-DigitalEncoder front_encoder(FEHIO::Pin10); 
-DigitalEncoder right_encoder(FEHIO::Pin9); 
-DigitalEncoder left_encoder(FEHIO::Pin8);
-
+//Declaring Encoders
 DigitalEncoder LEFTENCODER(FEHIO::Pin9); 
 DigitalEncoder RIGHTENCODER(FEHIO::Pin10); 
 DigitalEncoder BACKENCODER(FEHIO::Pin8);
 
-FEHMotor compost(FEHMotor::Motor3,5.0);
-FEHServo arm(FEHServo::Servo0);
-
+//Declaring CDS Cell
 AnalogInputPin CdS_cell(FEHIO::Pin0);
 
 void StopAll(); //stops the motion of all motors 
