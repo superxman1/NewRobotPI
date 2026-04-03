@@ -34,9 +34,9 @@
 #define Compost_Speed 25.0
 
 //Declaring DC Motors
-FEHMotor LEFTMOTOR(FEHMotor::Motor0,8.78); 
+FEHMotor LEFTMOTOR(FEHMotor::Motor0,9.0); 
 FEHMotor RIGHTMOTOR(FEHMotor::Motor1,9.0);
-FEHMotor BACKMOTOR(FEHMotor::Motor2,8.7);
+FEHMotor BACKMOTOR(FEHMotor::Motor2,9.0);
 
 //Declaring Servo Motors
 FEHServo BIG_SERVO(FEHServo::Servo0);
@@ -358,7 +358,7 @@ void DRIVE(float x, float y, int POWER){
         START_MOTORS();
 
         //Sleep between loops
-        Sleep(0.1);
+        Sleep(0.12);
     }
 
     //Get rid of this once encoders work
@@ -368,24 +368,24 @@ void DRIVE(float x, float y, int POWER){
 }
 
 //Pivot funtions
-void Pivot_Set_Angle(int degree);
+//void Pivot_Set_Angle(int degree);
 
 //Compost mechanism functions
-void Compost_Set_Speed(double percent);
+//void Compost_Set_Speed(double percent);
 
 //Pivot fnctions
-void Pivot_Set_Angle(int degree){
+/*void Pivot_Set_Angle(int degree){
     arm.SetDegree(degree);
     return;
-}
+}*/
 
 //Compost mechanism functions
-void Compost_Set_Speed(double percent){
+/*void Compost_Set_Speed(double percent){
     compost.SetPercent(percent);
     return;
-}
+}*/
 
-void startButton() {
+/*void startButton() {
     float startTime = TimeNow();
     float currentTime = 0;
     float startCondition = 0;
@@ -393,7 +393,7 @@ void startButton() {
 
     while(CdS_cell.Value() > 1.5){}
     return;
-} 
+}*/
 
 void RotateDegrees(float angleDeg, float speed)
 {
@@ -411,18 +411,18 @@ void RotateDegrees(float angleDeg, float speed)
     float targetCounts = wheelDistance * R_ENCODE_P_IN;
 
     // Reset encoders
-    right_encoder.ResetCounts();
-    left_encoder.ResetCounts();
-    front_encoder.ResetCounts();
+    RIGHTENCODER.ResetCounts();
+    BACKENCODER.ResetCounts();
+    LEFTENCODER.ResetCounts();
 
     // Determine direction
     float direction = (theta > 0) ? 1.0f : -1.0f;
 
     while (true)
     {
-        float c1 = fabs(right_encoder.Counts());
-        float c2 = fabs(left_encoder.Counts());
-        float c3 = fabs(front_encoder.Counts());
+        float c1 = fabs(RIGHTENCODER.Counts());
+        float c2 = fabs(BACKENCODER.Counts());
+        float c3 = fabs(LEFTENCODER.Counts());
 
         float avgCounts = (c1 + c2 + c3) / 3.0f;
         float remaining = targetCounts - avgCounts;
@@ -441,17 +441,17 @@ void RotateDegrees(float angleDeg, float speed)
             currentSpeed = speed * scale;
         }
 
-        rightdrive.SetPercent(direction * -currentSpeed);
-        leftdrive.SetPercent(direction * -currentSpeed);
-        frontdrive.SetPercent(direction * -currentSpeed);
+        RIGHTMOTOR.SetPercent(direction * -currentSpeed);
+        BACKMOTOR.SetPercent(direction * -currentSpeed);
+        LEFTMOTOR.SetPercent(direction * -currentSpeed);
 
         Sleep(0.005);
     }
 
-    StopAll();
+    STOP();
 }
 
-void StopAll(){
+/*void StopAll(){
 
     rightdrive.SetPercent(0.0);
 
@@ -461,7 +461,7 @@ void StopAll(){
 
     return;
 
-}
+}*/
 
 //Adam's attempt at allowing movement in ANY DIRECTION (VERY ROUGH TEST)
 /*void DriveTEST(float Angle, float Speed, float Distance){
@@ -533,7 +533,7 @@ int CDS_CHECK(){
 
 }
 
-bool DriveTEST_Light(float Angle, float Speed, float Distance){
+/*bool DriveTEST_Light(float Angle, float Speed, float Distance){
     int Light = 2;
     Angle = Angle * Radian_Conversion;
 
@@ -593,7 +593,7 @@ bool DriveTEST_Light(float Angle, float Speed, float Distance){
     StopAll();
 
     return false; // move finished normally
-}
+}*/
 
 /*void Milestone_2(){
     DriveTEST(180, 20.0, 1.0);
@@ -692,7 +692,7 @@ bool DriveTEST_Light(float Angle, float Speed, float Distance){
     DriveTEST(-90, 50.0, 10.0);
 }*/
 
-void DriveRightTime(float speed, float time)
+/*void DriveRightTime(float speed, float time)
 {
     float Angle = 90.0 * Radian_Conversion;
 
@@ -711,7 +711,7 @@ void DriveRightTime(float speed, float time)
     StopAll();
     
     return;
-}
+}*/
 
 void WaitForTouch()
 {
@@ -720,7 +720,7 @@ void WaitForTouch()
     while (!LCD.Touch(&x, &y)) {}    // wait for press
 }
 
-void BacktoWall(float time){
+/*void BacktoWall(float time){
     leftdrive.SetPercent(-50);
     frontdrive.SetPercent(50);
 
@@ -728,9 +728,9 @@ void BacktoWall(float time){
 
     StopAll();
     return;
-}
+}*/
 
-void FronttoWall(float time){
+/*void FronttoWall(float time){
     leftdrive.SetPercent(50);
     frontdrive.SetPercent(-50);
 
@@ -738,9 +738,9 @@ void FronttoWall(float time){
 
     StopAll();
     return;
-}
+}*/
 
-void Ramp(float time){
+/*void Ramp(float time){
     rightdrive.SetPercent(75);
     frontdrive.SetPercent(-75);
 
@@ -749,7 +749,7 @@ void Ramp(float time){
     StopAll();
 
     return;
-}
+}*/
 
 /*void Milestone_3(){
     WaitForTouch();
@@ -804,12 +804,8 @@ void Ramp(float time){
 
     RotateDegrees(-150, 50);
 }*/
- 
-void Milestone_4(){
 
-}
-
-void lever() {
+/*void lever() {
     int correctLever = RCS.GetLever();
     Pivot_Set_Angle(Lever_Up_ANGLE);
 
@@ -848,16 +844,16 @@ void lever() {
 
     // correct heading?
 
-}
+}*/
 
-void Reset_Counts(){
+/*void Reset_Counts(){
     right_encoder.ResetCounts();
     left_encoder.ResetCounts();
     front_encoder.ResetCounts();
     return;
-}
+}*/
 
-void Encoder_test(){
+/*void Encoder_test(){
     //Reset encoder counts
     Reset_Counts();
     
@@ -875,10 +871,12 @@ void Encoder_test(){
 
         Sleep(0.1);
     }
-}
+}*/
 
 void START_BUTTON(){
     while(CdS_cell.Value() > RED_LIGHT);
+
+    LCD.WriteLine("START LIGHT DETECTED");
     
     DRIVE(0, -1.5, 25);
 
@@ -887,7 +885,7 @@ void START_BUTTON(){
 
 //Drives from start to Apple Basket
 void DRIVE_TO_APPLE_BASKET(){
-    DRIVE(0, 17, 50);
+    DRIVE(0, 18, 50);
     
     //Rotate Robot to correct orientation
     RotateDegrees(-45, 25);
@@ -904,40 +902,64 @@ void APPLE_BASKET(){
     Sleep(1.0);
 
     //Drive hook under basket handle
-    DRIVE(0, 3.5, 25);
+    DRIVE(0, 3.0, 15);
 
     //Pick up basket
+    BIG_SERVO.SetDegree(70);
+
+    Sleep(0.5);
+
+    BIG_SERVO.SetDegree(60);
+
+    Sleep(0.5);
+
+    BIG_SERVO.SetDegree(50);
+
+    Sleep(0.5);
+
+    BIG_SERVO.SetDegree(40);
+
+    Sleep(0.5);
+
     BIG_SERVO.SetDegree(30);
 
-    Sleep(0.5);
-
-    BIG_SERVO.SetDegree(25);
-
-    Sleep(0.5);
-    
-    BIG_SERVO.SetDegree(20);
-
-    Sleep(0.5);
-    
-    BIG_SERVO.SetDegree(15);
-
     Sleep(1.0);
 
-    //Drive to ramp wall
-    DRIVE(-5, 0, 30);
-    DRIVE(0, -18, 30);
+    DRIVE(-5, -21, 50);
 
-    Sleep(1.0);
+    Sleep(0.1);
+
+    RotateDegrees(90, 25);
+
+    Sleep(0.5);
 
     //Drive up Ramp
-    DRIVE(35, 0, 25);
+    DRIVE(0, 35, 50);
 
-    //CODE NEEDS TO BE FINISHED
+    DRIVE(3.5, 0, 25);
+
+    LEFTMOTOR.SetPercent(-25);
+    RIGHTMOTOR.SetPercent(25);
+
+    Sleep(1.0);
+
+    STOP();
+
+    //Set Apple Basket Down
+    BIG_SERVO.Off();
+
+    Sleep(1.0);
+
+    //Drive away
+    DRIVE(0, -5, 15);
 }
 
 void ROBOT_CALIBRATION(){
     //Initializes the RCS system
     RCS.InitializeTouchMenu("1130D6KKR");
+
+    //Set servo 90 degrees
+    BIG_SERVO.SetDegree(90);
 }
 
 //Flips lever down and up
@@ -947,7 +969,7 @@ void FLIP_LEVER(){
 
     //Move lever arm below fertilizer lever
     RotateDegrees(-5, 10);
-    BIG_SERVO.SetDegree(145);
+    BIG_SERVO.SetDegree(105);  
     RotateDegrees(5, 10);
 
     //Waits 5 seconds
@@ -960,9 +982,14 @@ void FLIP_LEVER(){
 //Completes the Fertilizer Lever Task
 void LEVER(){
     //NEED CODE TO DRIVE TO LEVERS
+    DRIVE(-5, 0, 50);
+
+    RotateDegrees(-45, 25);
 
     //Set servo arm to  prepare for flipping lever down
     BIG_SERVO.SetDegree(60);
+
+    DRIVE(0, 13, 50);
 
     //Reads lever information
     int CORRECT_LEVER = RCS.GetLever();
@@ -1022,4 +1049,6 @@ void ERCMain()
     SERVO_CALIBRATION();
 
     APPLE_BASKET();
+
+    LEVER();
 }
