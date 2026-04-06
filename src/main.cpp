@@ -12,8 +12,10 @@
 #define COS60 0.5
 #define INV_SQRT2 0.70710678
 #define Radian_Conversion (PI/180)
+#define SQRT32 0.86602540378
 #define BASECOUNT 39
 #define COUNTS_PER_INCH 40.3860807722
+
 // Declare things like Motors, Servos, etc. here
 // For example:
 // FEHMotor leftMotor(FEHMotor::Motor0, 6.0);
@@ -358,7 +360,7 @@ void DRIVE(float x, float y, int POWER){
         START_MOTORS();
 
         //Sleep between loops
-        Sleep(0.12);
+        Sleep(0.1);
     }
 
     //Get rid of this once encoders work
@@ -395,8 +397,7 @@ void DRIVE(float x, float y, int POWER){
     return;
 }*/
 
-void RotateDegrees(float angleDeg, float speed)
-{
+void RotateDegrees(float angleDeg, float speed){
     const float ROBOT_RADIUS = 3.91;          // distance from center to wheel, adjust if needed
     const float MIN_SPEED = 12.0;              // adjust if needed
     const float SLOWDOWN_COUNTS = 40.0;        // start slowing near end
@@ -1040,15 +1041,27 @@ void LEVER(){
     }
 }
 
+//Completes the compost mechanism task
+void COMPOST(){
+    //Rotate mechanism towards bin
+    RotateDegrees(70, 25);
+
+    //Drive to Compost Bin
+    DRIVE(-SQRT32 * 6, -6/2, 50);
+    Sleep(0.5);
+    DRIVE(4/2, -SQRT32 * 4, 50);
+    Sleep(0.5);
+    DRIVE(-SQRT32 * 5, -5/2, 50);
+    Sleep(0.5);
+
+    CONTINUOUS_SERVO.SetDegree(80);
+
+    Sleep(0.5);
+}
+
 void ERCMain()
 {
-    ROBOT_CALIBRATION();
-
     START_BUTTON();
 
-    SERVO_CALIBRATION();
-
-    APPLE_BASKET();
-
-    LEVER();
+    COMPOST();
 }
