@@ -879,7 +879,7 @@ void START_BUTTON(){
 
     LCD.WriteLine("START LIGHT DETECTED");
     
-    DRIVE(0, -1.5, 25);
+    DRIVE(0, -.5, 25);
 
     DRIVE(0, 1.5, 25);
 }
@@ -1049,18 +1049,26 @@ void COMPOST(){
     //Drive to Compost Bin
     DRIVE(-SQRT32 * 6, -6/2, 50);
     Sleep(0.5);
-    DRIVE(4/2, -SQRT32 * 4, 50);
+    DRIVE(4.5/2, -SQRT32 * 4.5, 50);
     Sleep(0.5);
-    DRIVE(-SQRT32 * 5, -5/2, 50);
+    DRIVE(-SQRT32 * 3.5, -3.5/2, 50);
     Sleep(0.5);
+    RotateDegrees(-5, 25);
+ 
+    CONTINUOUS_SERVO.SetDegree(95);
+    Sleep(1.5);
+    CONTINUOUS_SERVO.SetDegree(70);
+    Sleep(1.5);
+    CONTINUOUS_SERVO.Off();
 
-    CONTINUOUS_SERVO.SetDegree(80);
+    DRIVE(SQRT32 * 11, 11/2, 50);
 
-    Sleep(0.5);
+
+
 }
 
 void ERCMain()
-{
+{   
     START_BUTTON();
 
     COMPOST();
