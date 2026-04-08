@@ -901,7 +901,7 @@ void START_BUTTON(){
     while(CdS_cell.Value() > RED_LIGHT);
 
     LCD.WriteLine("START LIGHT DETECTED");
-    Robot_Heading = 135;
+    Robot_Heading = 45;
     DRIVE(0, -.5, 25);
 
     DRIVE(0, 1.5, 25);
