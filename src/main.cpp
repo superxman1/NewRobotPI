@@ -58,6 +58,9 @@ void Turn_Left();
 void startButton();
 void simpleDrive(int speed, float time);
 void simpleReverse(int speed, float time);
+void DRIVE(float x, float y, int POWER);
+void DriveFieldRelative(float headingDeg, float fieldX, float fieldY, int power);
+void RotateDegrees(float angleDeg, float speed);
 void startButton();
 void humidifier();
 void Milestone_3();
@@ -84,6 +87,9 @@ void Stop(); */
 #define RED_LIGHT 2.0
 #define BLUE_LIGHT_MIN 2.0
 #define BLUE_LIGHT_MAX 2.6
+
+//Define a global variable to keep track of heading (in degrees, CCW positive)
+float Robot_Heading = 0;
 
 void STOP(){
     LEFTMOTOR.SetPercent(0);
@@ -369,6 +375,20 @@ void DRIVE(float x, float y, int POWER){
     ENCODER_PRINT_MANUAL();
 }
 
+void DriveFieldRelative(float headingDeg, float fieldX, float fieldY, int power)
+{
+    //CCW Positive
+    // Convert heading to radians
+    float h = headingDeg * PI / 180.0f;
+
+    // Convert field-frame command into robot-frame command
+    float robotX =  fieldX * cos(h) + fieldY * sin(h);
+    float robotY = -fieldX * sin(h) + fieldY * cos(h);
+
+    // Use drive to command the robot in the robot-relative direction
+    DRIVE(robotX, robotY, power);
+}
+
 //Pivot funtions
 //void Pivot_Set_Angle(int degree);
 
@@ -401,6 +421,9 @@ void RotateDegrees(float angleDeg, float speed){
     const float ROBOT_RADIUS = 3.91;          // distance from center to wheel, adjust if needed
     const float MIN_SPEED = 12.0;              // adjust if needed
     const float SLOWDOWN_COUNTS = 40.0;        // start slowing near end
+
+    // Update robot heading
+    Robot_Heading = Robot_Heading + angleDeg;
 
     // Convert degrees to radians
     float theta = angleDeg * PI / 180.0;
@@ -878,7 +901,7 @@ void START_BUTTON(){
     while(CdS_cell.Value() > RED_LIGHT);
 
     LCD.WriteLine("START LIGHT DETECTED");
-    
+    Robot_Heading = 135;
     DRIVE(0, -.5, 25);
 
     DRIVE(0, 1.5, 25);
