@@ -418,6 +418,7 @@ void DriveFieldRelative(float headingDeg, float fieldX, float fieldY, int power)
 }*/
 
 void RotateDegrees(float angleDeg, float speed){
+    //CCW is positive
     const float ROBOT_RADIUS = 3.91;          // distance from center to wheel, adjust if needed
     const float MIN_SPEED = 12.0;              // adjust if needed
     const float SLOWDOWN_COUNTS = 40.0;        // start slowing near end
@@ -426,7 +427,7 @@ void RotateDegrees(float angleDeg, float speed){
     Robot_Heading = Robot_Heading + angleDeg;
 
     // Convert degrees to radians
-    float theta = angleDeg * PI / 180.0;
+    float theta = -angleDeg * PI / 180.0;
 
     // Wheel travel distance required
     float wheelDistance = ROBOT_RADIUS * fabs(theta);
@@ -912,7 +913,7 @@ void DRIVE_TO_APPLE_BASKET(){
     DRIVE(0, 18, 50);
     
     //Rotate Robot to correct orientation
-    RotateDegrees(-45, 25);
+    RotateDegrees(45, 25);
 }
 
 //Completes the Apple Basket Task
@@ -953,7 +954,7 @@ void APPLE_BASKET(){
 
     Sleep(0.1);
 
-    RotateDegrees(90, 25);
+    RotateDegrees(-90, 25);
 
     Sleep(0.5);
 
@@ -992,9 +993,9 @@ void FLIP_LEVER(){
     BIG_SERVO.SetDegree(135);
 
     //Move lever arm below fertilizer lever
-    RotateDegrees(-5, 10);
-    BIG_SERVO.SetDegree(105);  
     RotateDegrees(5, 10);
+    BIG_SERVO.SetDegree(105);  
+    RotateDegrees(-5, 10);
 
     //Waits 5 seconds
     Sleep(5.0);
@@ -1008,7 +1009,7 @@ void LEVER(){
     //NEED CODE TO DRIVE TO LEVERS
     DRIVE(-5, 0, 50);
 
-    RotateDegrees(-45, 25);
+    RotateDegrees(45, 25);
 
     //Set servo arm to  prepare for flipping lever down
     BIG_SERVO.SetDegree(60);
@@ -1067,7 +1068,7 @@ void LEVER(){
 //Completes the compost mechanism task
 void COMPOST(){
     //Rotate mechanism towards bin
-    RotateDegrees(70, 25);
+    RotateDegrees(-70, 25);
 
     //Drive to Compost Bin
     DRIVE(-SQRT32 * 6, -6/2, 50);
@@ -1076,7 +1077,7 @@ void COMPOST(){
     Sleep(0.5);
     DRIVE(-SQRT32 * 3.5, -3.5/2, 50);
     Sleep(0.5);
-    RotateDegrees(-5, 25);
+    RotateDegrees(5, 25);
  
     CONTINUOUS_SERVO.SetDegree(95);
     Sleep(1.5);
