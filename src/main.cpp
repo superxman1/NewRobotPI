@@ -65,6 +65,8 @@ void startButton();
 void humidifier();
 void Milestone_3();
 void lever();
+void RCSData();
+void Distance_Calc();
 
 /* void Drive_Forward();
 void Drive_Back();
@@ -88,8 +90,7 @@ void Stop(); */
 #define BLUE_LIGHT_MIN 2.0
 #define BLUE_LIGHT_MAX 2.6
 
-//Define a global variable to keep track of heading (in degrees, CCW positive)
-float Robot_Heading = 0;
+
 
 void STOP(){
     LEFTMOTOR.SetPercent(0);
@@ -373,6 +374,35 @@ void DRIVE(float x, float y, int POWER){
     STOP();
 
     ENCODER_PRINT_MANUAL();
+}
+
+//Define a global variable to keep track of heading (in degrees, CCW positive)
+float Robot_Heading = 0;
+float X_POS = 0;
+float Y_POS = 0:
+int increment = 0;
+
+struct CourseCoordinates {
+    float CourseHeading;
+    float CourseX;
+    float CourseY;
+};
+struct CourseCoordinates p1 = {0, 0, 0}; //Pre-determined course values
+// Create struct for each desired position
+
+void RCSData() {
+    RCSPose* pose = RCS.RequestPosition();
+
+    Robot_Heading = pose->heading;
+    X_POS = pose->x;
+    Y_POS = pose->y;
+    increment++;
+}
+
+void Distance_Calc() {
+    DesiredHeading = CourseHeading - p1->Robot_Heading;
+    DesiredX = fabs(X_POS - p1->x);
+    DesiredY = fabs(Y_POS - p1->y);
 }
 
 void DriveFieldRelative(float headingDeg, float fieldX, float fieldY, int power)
