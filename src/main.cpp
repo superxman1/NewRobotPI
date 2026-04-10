@@ -393,7 +393,6 @@ struct CourseCoordinates p1 = {300, 21.64, 49.25}; //Pre-determined course value
 
 void RCSData() {
     RCSPose* pose = RCS.RequestPosition();
-    Sleep(0.4);
 
     Robot_Heading = pose->heading;
     X_POS = pose->x;
@@ -404,8 +403,9 @@ float DesiredHeading = 0;
 float DesiredX = 0;
 float DesiredY = 0;
 
-void Distance_Calc() {
-    DesiredHeading = p1.CourseHeading - Robot_Heading;
+void Distance_Calc(CourseCoordinates target) {
+    DesiredHeading = target.CourseHeading - Robot_Heading;
+
     if(DesiredHeading > 180) {
         DesiredHeading -= 360;
     }
@@ -413,15 +413,15 @@ void Distance_Calc() {
         DesiredHeading += 360;
     }
 
-    DesiredX = p1.CourseX - X_POS;
-    DesiredY = p1.CourseY - Y_POS;
+    DesiredX = target.CourseX - X_POS;
+    DesiredY = target.CourseY - Y_POS;
 
     LCD.Write("Course Heading: ");
-    LCD.WriteLine(p1.CourseHeading);
+    LCD.WriteLine(target.CourseHeading);
     LCD.Write("Course X: ");
-    LCD.WriteLine(p1.CourseX);
+    LCD.WriteLine(target.CourseX);
     LCD.Write("CourseY: ");
-    LCD.WriteLine(p1.CourseY);
+    LCD.WriteLine(target.CourseY);
     Sleep(0.5);
     LCD.Clear();
 
@@ -445,9 +445,9 @@ void Distance_Calc() {
     Sleep(0.5);
 }
 
-void RCSFunction() {
+void RCSFunction(CourseCoordinates target) {
     RCSData();
-    Distance_Calc();
+    Distance_Calc(target);
 }
 
 void DriveFieldRelative(float headingDeg, float fieldX, float fieldY, int power)
@@ -1171,9 +1171,9 @@ void ERCMain()
     // START_BUTTON();
     ROBOT_CALIBRATION();
     WaitForTouch();
-    RCSFunction();
+    RCSFunction(p1);
     RotateDegrees(DesiredHeading, 50);
-    RCSFunction();
+    RCSFunction(p1);
     LCD.Clear();
     LCD.WriteLine(Robot_Heading);
     WaitForTouch();
