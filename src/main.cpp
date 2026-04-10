@@ -67,6 +67,7 @@ void Milestone_3();
 void lever();
 void RCSData();
 void Distance_Calc();
+void RCSFunction();
 
 /* void Drive_Forward();
 void Drive_Back();
@@ -387,7 +388,7 @@ struct CourseCoordinates {
     float CourseX;
     float CourseY;
 };
-struct CourseCoordinates p1 = {0, 0, 0}; //Pre-determined course values
+struct CourseCoordinates p1 = {90, 15, 15}; //Pre-determined course values
 // Create struct for each desired position
 
 void RCSData() {
@@ -399,10 +400,25 @@ void RCSData() {
     increment++;
 }
 
+float DesiredHeading = 0;
+float DesiredX = 0;
+float DesiredY = 0;
+
 void Distance_Calc() {
-    DesiredHeading = CourseHeading - p1->Robot_Heading;
-    DesiredX = fabs(X_POS - p1->x);
-    DesiredY = fabs(Y_POS - p1->y);
+    DesiredHeading = p1->CourseHeading - Robot_Heading;
+    if(DesiredHeading > 180) {
+        DesiredHeading -= 360;
+    }
+    if(DesiredHeading < -180) {
+        DesiredHeading += 360;
+    }
+    DesiredX = fabs(X_POS - p1->CourseX);
+    DesiredY = fabs(Y_POS - p1->CourseY);
+}
+
+void RCSFunction() {
+    RCSData();
+    Distance_Calc();
 }
 
 void DriveFieldRelative(float headingDeg, float fieldX, float fieldY, int power)
@@ -1123,6 +1139,8 @@ void COMPOST(){
 void ERCMain()
 {   
     START_BUTTON();
+    RCSFunction();
+    DriveFieldRelative(DesiredHeading, DesiredX, DesiredY, 25);
 
-    COMPOST();
+    // COMPOST();
 }
