@@ -419,7 +419,7 @@ void DriveFieldRelative(float headingDeg, float fieldX, float fieldY, int power)
 
 void RotateDegrees(float angleDeg, float speed){
     //CCW is positive
-    const float ROBOT_RADIUS = 3.91;          // distance from center to wheel, adjust if needed
+    const float ROBOT_RADIUS = 3.92;          // distance from center to wheel, adjust if needed
     const float MIN_SPEED = 12.0;              // adjust if needed
     const float SLOWDOWN_COUNTS = 40.0;        // start slowing near end
 
@@ -1093,7 +1093,27 @@ void COMPOST(){
 
 void ERCMain()
 {   
-    START_BUTTON();
+    TestGUI();
 
-    COMPOST();
+    /*
+    WaitForTouch();
+    
+    DriveFieldRelative(Robot_Heading, 2, 3, 25);
+    WaitForTouch();
+    DriveFieldRelative(Robot_Heading, 4, -6, 25);
+    WaitForTouch();
+    DriveFieldRelative(Robot_Heading, -7, -3, 25);
+    WaitForTouch();
+    DriveFieldRelative(Robot_Heading, -5, 6, 25);
+
+    WaitForTouch();
+
+    DriveFieldRelative(Robot_Heading, 2, 3, 50);
+    WaitForTouch();
+    DriveFieldRelative(Robot_Heading, 4, -6, 50);
+    WaitForTouch();
+    DriveFieldRelative(Robot_Heading, -7, -3, 50);
+    WaitForTouch();
+    DriveFieldRelative(Robot_Heading, -5, 6, 50);
+    */
 }
