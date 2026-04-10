@@ -380,7 +380,7 @@ void DRIVE(float x, float y, int POWER){
 //Define a global variable to keep track of heading (in degrees, CCW positive)
 float Robot_Heading = 0;
 float X_POS = 0;
-float Y_POS = 0:
+float Y_POS = 0;
 int increment = 0;
 
 struct CourseCoordinates {
@@ -388,11 +388,12 @@ struct CourseCoordinates {
     float CourseX;
     float CourseY;
 };
-struct CourseCoordinates p1 = {90, 15, 15}; //Pre-determined course values
+struct CourseCoordinates p1 = {300, 21.64, 49.25}; //Pre-determined course values
 // Create struct for each desired position
 
 void RCSData() {
     RCSPose* pose = RCS.RequestPosition();
+    Sleep(0.4);
 
     Robot_Heading = pose->heading;
     X_POS = pose->x;
@@ -404,15 +405,44 @@ float DesiredX = 0;
 float DesiredY = 0;
 
 void Distance_Calc() {
-    DesiredHeading = p1->CourseHeading - Robot_Heading;
+    DesiredHeading = p1.CourseHeading - Robot_Heading;
     if(DesiredHeading > 180) {
         DesiredHeading -= 360;
     }
     if(DesiredHeading < -180) {
         DesiredHeading += 360;
     }
-    DesiredX = fabs(X_POS - p1->CourseX);
-    DesiredY = fabs(Y_POS - p1->CourseY);
+
+    DesiredX = p1.CourseX - X_POS;
+    DesiredY = p1.CourseY - Y_POS;
+
+    LCD.Write("Course Heading: ");
+    LCD.WriteLine(p1.CourseHeading);
+    LCD.Write("Course X: ");
+    LCD.WriteLine(p1.CourseX);
+    LCD.Write("CourseY: ");
+    LCD.WriteLine(p1.CourseY);
+    Sleep(0.5);
+    LCD.Clear();
+
+    LCD.Write("Current Heading: ");
+    LCD.WriteLine(Robot_Heading);
+    LCD.Write("Current X: ");
+    LCD.WriteLine(X_POS);
+    LCD.Write("Current Y: ");
+    LCD.WriteLine(Y_POS);
+    Sleep(0.5);
+    LCD.Clear();
+
+    LCD.Write("Heading: ");
+    LCD.WriteLine(DesiredHeading);
+    LCD.Write("X distance:");
+    LCD.WriteLine(DesiredX);
+    LCD.Write("Y distance: ");
+    LCD.WriteLine(DesiredY);
+    LCD.Write("Plugged in value: ");
+    LCD.Write(Robot_Heading);
+    Sleep(0.5);
 }
 
 void RCSFunction() {
@@ -1138,12 +1168,20 @@ void COMPOST(){
 
 void ERCMain()
 {   
-    START_BUTTON();
+    // START_BUTTON();
+    ROBOT_CALIBRATION();
+    WaitForTouch();
     RCSFunction();
-    DriveFieldRelative(DesiredHeading, DesiredX, DesiredY, 25);
+    RotateDegrees(DesiredHeading, 50);
+    RCSFunction();
+    LCD.Clear();
+    LCD.WriteLine(Robot_Heading);
+    WaitForTouch();
+    DriveFieldRelative(Robot_Heading, DesiredX, DesiredY, 50);
+    LCD.WriteLine(Robot_Heading);
 
     // COMPOST();
-    TestGUI();
+    // TestGUI();
 
     /*
     WaitForTouch();
