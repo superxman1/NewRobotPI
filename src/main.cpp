@@ -397,7 +397,6 @@ void RCSData() {
     Robot_Heading = pose->heading;
     X_POS = pose->x;
     Y_POS = pose->y;
-    increment++;
 }
 
 float DesiredHeading = 0;
