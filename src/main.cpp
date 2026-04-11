@@ -279,6 +279,17 @@ int DRIVE_CONDITION(){
     }
 }
 
+//Check distance and initiates PID
+float LEFT_TRAVELLED, RIGHT_TRAVELLED, BACK_TRAVELLED, AVERAGE_TRAVELLED;
+void DISTANCE_UPDATE(){
+    LEFT_TRAVELLED = sqrt(pow(((LEFT_X * (LEFT_COUNTS/COUNTS_PER_INCH)) + (LEFT_Y * (LEFT_COUNTS/COUNTS_PER_INCH))), 2));
+    RIGHT_TRAVELLED = sqrt(pow(((RIGHT_X * (RIGHT_COUNTS/COUNTS_PER_INCH)) + (RIGHT_Y * (RIGHT_COUNTS/COUNTS_PER_INCH))), 2));
+    BACK_TRAVELLED = sqrt(pow(((BACK_X * (RIGHT_COUNTS/COUNTS_PER_INCH)) + (BACK_Y * (RIGHT_COUNTS/COUNTS_PER_INCH))), 2));
+
+    //Calculating the average of all distances travelled
+    AVERAGE_TRAVELLED = (LEFT_TRAVELLED + RIGHT_TRAVELLED + BACK_TRAVELLED) / 3;
+}
+
 //Corrects wheel power based on heading error
 void POWER_CORRECT(){
     float LEFT_RATIO = 0, RIGHT_RATIO = 0, BACK_RATIO = 0;
@@ -454,11 +465,11 @@ void DriveFieldRelative(float headingDeg, float fieldX, float fieldY, int power)
 {
     //CCW Positive
     // Convert heading to radians
-    float h = headingDeg * PI / 180.0f;
+    float HEADING = headingDeg * PI / 180.0f;
 
     // Convert field-frame command into robot-frame command
-    float robotX =  fieldX * cos(h) + fieldY * sin(h);
-    float robotY = -fieldX * sin(h) + fieldY * cos(h);
+    float robotX =  fieldX * cos(HEADING) + fieldY * sin(HEADING);
+    float robotY = -fieldX * sin(HEADING) + fieldY * cos(HEADING);
 
     // Use drive to command the robot in the robot-relative direction
     DRIVE(robotX, robotY, power);
