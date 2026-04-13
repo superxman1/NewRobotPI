@@ -450,7 +450,7 @@ void Distance_Calc(CourseCoordinates target) {
     DesiredX = target.CourseX - X_POS;
     DesiredY = target.CourseY - Y_POS;
 
-    LCD.Write("Course Heading: ");
+    /* LCD.Write("Course Heading: ");
     LCD.WriteLine(target.CourseHeading);
     LCD.Write("Course X: ");
     LCD.WriteLine(target.CourseX);
@@ -476,7 +476,7 @@ void Distance_Calc(CourseCoordinates target) {
     LCD.WriteLine(DesiredY);
     LCD.Write("Plugged in value: ");
     LCD.Write(Robot_Heading);
-    Sleep(0.5);
+    Sleep(0.5); */
 }
 
 void RCSFunction(CourseCoordinates target) {
@@ -1204,6 +1204,7 @@ void ERCMain()
 {   
     // START_BUTTON();
     ROBOT_CALIBRATION();
+    
     WaitForTouch();
     RCSFunction(p1);
     RotateDegrees(DesiredHeading, 50);
