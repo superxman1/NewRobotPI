@@ -426,6 +426,7 @@ struct CourseCoordinates p1 = {300, 21.64, 49.25}; //Pre-determined course value
 // Create struct for each desired position
 
 void RCSData() {
+    Sleep(.5);
     RCSPose* pose = RCS.RequestPosition();
 
     Robot_Heading = pose->heading;
@@ -437,8 +438,8 @@ float DesiredHeading = 0;
 float DesiredX = 0;
 float DesiredY = 0;
 
-void Distance_Calc(CourseCoordinates target) {
-    DesiredHeading = target.CourseHeading - Robot_Heading;
+void Distance_Calc(CourseCoordinates *target) {
+    DesiredHeading = target->CourseHeading - Robot_Heading;
 
     if(DesiredHeading > 180) {
         DesiredHeading -= 360;
@@ -447,15 +448,16 @@ void Distance_Calc(CourseCoordinates target) {
         DesiredHeading += 360;
     }
 
-    DesiredX = target.CourseX - X_POS;
-    DesiredY = target.CourseY - Y_POS;
+    DesiredX = target->CourseX - X_POS;
+    DesiredY = target->CourseY - Y_POS;
 
+    /*
     LCD.Write("Course Heading: ");
-    LCD.WriteLine(target.CourseHeading);
+    LCD.WriteLine(target->CourseHeading);
     LCD.Write("Course X: ");
-    LCD.WriteLine(target.CourseX);
+    LCD.WriteLine(target->CourseX);
     LCD.Write("CourseY: ");
-    LCD.WriteLine(target.CourseY);
+    LCD.WriteLine(target->CourseY);
     Sleep(0.5);
     LCD.Clear();
 
@@ -477,27 +479,24 @@ void Distance_Calc(CourseCoordinates target) {
     LCD.Write("Plugged in value: ");
     LCD.Write(Robot_Heading);
     Sleep(0.5);
+    */
 }
 
-void RCSFunction(CourseCoordinates target) {
+void RCSFunction(CourseCoordinates *target) {
     RCSData();
     Distance_Calc(target);
 }
 
 void DriveFieldRelative(float headingDeg, float fieldX, float fieldY, int power)
 {
-    //CCW Positive
-    // Convert heading to radians
-    float HEADING = headingDeg * PI / 180.0f;
+    float headingOffsetDeg = 325; // example, must be tuned
+    float HEADING = (headingDeg - headingOffsetDeg) * PI / 180.0f;
 
-    // Convert field-frame command into robot-frame command
     float robotX =  fieldX * cos(HEADING) + fieldY * sin(HEADING);
     float robotY = -fieldX * sin(HEADING) + fieldY * cos(HEADING);
 
-    // Use drive to command the robot in the robot-relative direction
     DRIVE(robotX, robotY, power);
 }
-
 //Pivot funtions
 //void Pivot_Set_Angle(int degree);
 
@@ -1205,11 +1204,15 @@ void ERCMain()
     // START_BUTTON();
     ROBOT_CALIBRATION();
     WaitForTouch();
-    RCSFunction(p1);
+    RCSFunction(&p1);
     RotateDegrees(DesiredHeading, 50);
-    RCSFunction(p1);
-    LCD.Clear();
+    RCSFunction(&p1);
+    LCD.Write(" Heading: ");
     LCD.WriteLine(Robot_Heading);
+    LCD.Write("Desired X: ");
+    LCD.WriteLine(DesiredX);
+    LCD.Write("Desired Y: ");
+    LCD.WriteLine(DesiredY);
     WaitForTouch();
     DriveFieldRelative(Robot_Heading, DesiredX, DesiredY, 50);
     LCD.WriteLine(Robot_Heading);
