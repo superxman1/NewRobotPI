@@ -29,8 +29,8 @@
 #define Window_ANGLE 45
 #define Lever_Down_ANGLE 90
 #define Lever_Up_ANGLE 0
-#define Servo_Max_Angle 180
-#define Servo_Min_Angle 0
+#define Servo_Max_Angle 135
+#define Servo_Min_Angle 75
 
 //Compost Mechanism Constants
 #define Compost_Speed 25.0
@@ -155,10 +155,10 @@ float TRIG_CALULATIONS(float x, float y){
 
 void SERVO_CALIBRATION(){
     //Sets Min Value
-    BIG_SERVO.SetMin(500);
+    BIG_SERVO.SetMin(1315);
 
     //Sets Max Value
-    BIG_SERVO.SetMax(1800);
+    BIG_SERVO.SetMax(2025);
 }
 
 //Calculates the x and y components of a unit direction vector in the intended direction of travel
@@ -396,7 +396,7 @@ void DRIVE(float x, float y, int POWER){
         POWER_CORRECT();
 
         //Slows down the robot before reaching target
-        SLOWDOWN_CHECK();
+        //SLOWDOWN_CHECK();
 
         //Applies updated motor powers
         START_MOTORS();
@@ -577,6 +577,17 @@ int CDS_CHECK(){
         return 2; //Red
     }
 
+}
+
+void BIG_SERVO_ROTATE(float angle){
+    if(angle > Servo_Max_Angle){
+        angle = Servo_Max_Angle;
+    }
+    else if(angle < Servo_Min_Angle){
+        angle = Servo_Min_Angle;
+    }
+
+    BIG_SERVO.SetDegree(angle);
 }
 
 /*void Milestone_2(){
@@ -1053,9 +1064,9 @@ void COMPOST(){
 void ERCMain()
 {   
     // START_BUTTON();
-    ROBOT_CALIBRATION();
     
-    WaitForTouch();
+    ROBOT_CALIBRATION();
+    WaitForFinalAction();
     RCSFunction(&p1);
     RotateDegrees(DesiredHeading, 50);
     RCSFunction(&p1);
@@ -1067,7 +1078,10 @@ void ERCMain()
     LCD.WriteLine(DesiredY);
     WaitForTouch();
     DriveFieldRelative(Robot_Heading, DesiredX, DesiredY, 50);
-    LCD.WriteLine(Robot_Heading);
+
+    RCSFunction(&p1);
+    DriveFieldRelative(Robot_Heading, DesiredX, DesiredY, 50);
+    
 
     // COMPOST();
     // TestGUI();
