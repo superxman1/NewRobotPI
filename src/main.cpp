@@ -492,7 +492,8 @@ void RCSFunction(CourseCoordinates *target) {
 
 void DriveFieldRelative(float headingDeg, float fieldX, float fieldY, int power)
 {
-    float headingOffsetDeg = 325; // example, must be tuned
+    // Convert heading to radians and adjust for field-relative control
+    float headingOffsetDeg = 325;
     float HEADING = (headingDeg - headingOffsetDeg) * PI / 180.0f;
 
     float robotX =  fieldX * cos(HEADING) + fieldY * sin(HEADING);
