@@ -422,8 +422,11 @@ struct CourseCoordinates {
     float CourseX;
     float CourseY;
 };
+
 struct CourseCoordinates p1 = {300, 21.64, 49.25}; //Pre-determined course values
 // Create struct for each desired position
+
+
 
 void RCSData() {
     RCSPose* pose = RCS.RequestPosition();
@@ -498,34 +501,7 @@ void DriveFieldRelative(float headingDeg, float fieldX, float fieldY, int power)
     DRIVE(robotX, robotY, power);
 }
 
-//Pivot funtions
-//void Pivot_Set_Angle(int degree);
-
-//Compost mechanism functions
-//void Compost_Set_Speed(double percent);
-
-//Pivot fnctions
-/*void Pivot_Set_Angle(int degree){
-    arm.SetDegree(degree);
-    return;
-}*/
-
-//Compost mechanism functions
-/*void Compost_Set_Speed(double percent){
-    compost.SetPercent(percent);
-    return;
-}*/
-
-/*void startButton() {
-    float startTime = TimeNow();
-    float currentTime = 0;
-    float startCondition = 0;
-    float lightReading();
-
-    while(CdS_cell.Value() > 1.5){}
-    return;
-}*/
-
+//Rotates the robot to a specific angle
 void RotateDegrees(float angleDeg, float speed){
     //CCW is positive
     const float ROBOT_RADIUS = 3.92;          // distance from center to wheel, adjust if needed
@@ -585,71 +561,6 @@ void RotateDegrees(float angleDeg, float speed){
     STOP();
 }
 
-/*void StopAll(){
-
-    rightdrive.SetPercent(0.0);
-
-    leftdrive.SetPercent(0.0);
-
-    frontdrive.SetPercent(0.0);
-
-    return;
-
-}*/
-
-//Adam's attempt at allowing movement in ANY DIRECTION (VERY ROUGH TEST)
-/*void DriveTEST(float Angle, float Speed, float Distance){
-    Angle = Angle * Radian_Conversion;
-
-    //Sets a multiplier based on the angle of each wheel
-    float frontmult, rightmult, leftmult;
-    frontmult = sin(Angle);
-    rightmult = sin(Angle - (2*(PI/3)));
-    leftmult = sin(Angle - (4*(PI/3)));
-
-    //Determines the number of counts each wheel must travel
-    int frontcount, rightcount, leftcount;
-    frontcount = Distance * BASECOUNT * frontmult;
-    rightcount = Distance * BASECOUNT * rightmult;
-    leftcount = Distance * BASECOUNT * leftmult;
-
-    //Prepping for actual moving loop to start
-    if(frontcount == 0){
-        frontcount = 1000;
-    }
-    if(rightcount == 0){
-        rightcount = 1000;
-    }
-    if(leftcount == 0){
-        leftcount = 1000;
-    }
-
-    //Resets the encoders before moving
-    front_encoder.ResetCounts();
-    right_encoder.ResetCounts();
-    left_encoder.ResetCounts();
-
-    //Starting the motors (INCLUDING CORRECTION FACTORS)
-    frontdrive.SetPercent(-(Speed * frontmult));
-    rightdrive.SetPercent(-(Speed * rightmult));
-    leftdrive.SetPercent(-((Speed * leftmult)));
-
-    while(abs(front_encoder.Counts()) < abs(frontcount) && abs(right_encoder.Counts()) < abs(rightcount) && abs(left_encoder.Counts()) < abs(leftcount)){
-        //Keep moving until counts reached
-    }
-
-    //Writing encoder counts to screen
-    LCD.Clear();
-    LCD.WriteLine(front_encoder.Counts());
-    LCD.WriteLine(right_encoder.Counts());
-    LCD.WriteLine(left_encoder.Counts());
-
-    //Stops the motors
-    StopAll();
-
-    return;
-}*/
-
 int CDS_CHECK(){
         LCD.Clear();
         LCD.WriteLine(CdS_cell.Value());
@@ -666,68 +577,6 @@ int CDS_CHECK(){
     }
 
 }
-
-/*bool DriveTEST_Light(float Angle, float Speed, float Distance){
-    int Light = 2;
-    Angle = Angle * Radian_Conversion;
-
-    // Sets a multiplier based on the angle of each wheel
-    float frontmult, rightmult, leftmult;
-    frontmult = sin(Angle);
-    rightmult = sin(Angle - (2*(PI/3)));
-    leftmult = sin(Angle - (4*(PI/3)));
-
-    // Determines the number of counts each wheel must travel
-    int frontcount, rightcount, leftcount;
-    frontcount = Distance * BASECOUNT * frontmult;
-    rightcount = Distance * BASECOUNT * rightmult;
-    leftcount = Distance * BASECOUNT * leftmult;
-
-    // Prepping for actual moving loop to start
-    if(frontcount == 0){
-        frontcount = 1000;
-    }
-    if(rightcount == 0){
-        rightcount = 1000;
-    }
-    if(leftcount == 0){
-        leftcount = 1000;
-    }
-
-    // Resets the encoders before moving
-    front_encoder.ResetCounts();
-    right_encoder.ResetCounts();
-    left_encoder.ResetCounts();
-
-    // Starting the motors
-    frontdrive.SetPercent(-(Speed * frontmult));
-    rightdrive.SetPercent(-(Speed * rightmult));
-    leftdrive.SetPercent(-(Speed * leftmult));
-
-    while(abs(front_encoder.Counts()) < abs(frontcount) &&
-          abs(right_encoder.Counts()) < abs(rightcount) &&
-          abs(left_encoder.Counts()) < abs(leftcount))
-    {
-        // Check CDS during movement
-        Light = CDS_CHECK();
-        if(CDS_CHECK() != 2){
-            StopAll();
-            return true; // light found
-        }
-        Sleep(0.05);
-    }
-
-    // Writing encoder counts to screen
-    LCD.Clear();
-    LCD.WriteLine(front_encoder.Counts());
-    LCD.WriteLine(right_encoder.Counts());
-    LCD.WriteLine(left_encoder.Counts());
-
-    // Stops the motors
-    StopAll();
-
-    return false; // move finished normally
-}*/
 
 /*void Milestone_2(){
     DriveTEST(180, 20.0, 1.0);
@@ -1208,7 +1057,7 @@ void ERCMain()
     WaitForTouch();
     RCSFunction(p1);
     RotateDegrees(DesiredHeading, 50);
-    RCSFunction(p1);
+    RCSData();
     LCD.Clear();
     LCD.WriteLine(Robot_Heading);
     WaitForTouch();
