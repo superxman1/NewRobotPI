@@ -280,14 +280,33 @@ int DRIVE_CONDITION(){
 }
 
 //Check distance and initiates PID
-float LEFT_TRAVELLED, RIGHT_TRAVELLED, BACK_TRAVELLED, AVERAGE_TRAVELLED;
+float LEFT_TRAVELLED, RIGHT_TRAVELLED, BACK_TRAVELLED, MAX_TRAVELLED;
 void DISTANCE_UPDATE(){
     LEFT_TRAVELLED = sqrt(pow(((LEFT_X * (LEFT_COUNTS/COUNTS_PER_INCH)) + (LEFT_Y * (LEFT_COUNTS/COUNTS_PER_INCH))), 2));
     RIGHT_TRAVELLED = sqrt(pow(((RIGHT_X * (RIGHT_COUNTS/COUNTS_PER_INCH)) + (RIGHT_Y * (RIGHT_COUNTS/COUNTS_PER_INCH))), 2));
     BACK_TRAVELLED = sqrt(pow(((BACK_X * (RIGHT_COUNTS/COUNTS_PER_INCH)) + (BACK_Y * (RIGHT_COUNTS/COUNTS_PER_INCH))), 2));
 
     //Calculating the average of all distances travelled
-    AVERAGE_TRAVELLED = (LEFT_TRAVELLED + RIGHT_TRAVELLED + BACK_TRAVELLED) / 3;
+    MAX_TRAVELLED = max(LEFT_TRAVELLED, max(RIGHT_TRAVELLED, BACK_TRAVELLED));
+}
+
+float SLOW_MULTIPLIER;
+void SLOWDOWN_CHECK(){
+    //Decreases speed based on distance from target
+    if(MAX_TRAVELLED <= 3.5){
+        //Calculates a slowdown multiplier based on distance from target
+        SLOW_MULTIPLIER = MAX_TRAVELLED / 3.5;
+        
+        //If the multiplier is below 0.5, then don't slow down the motors more
+        if(SLOW_MULTIPLIER <= 0.5){
+            SLOW_MULTIPLIER = 1;
+        }
+
+        //Adjusts motor powers
+        LEFT_POWER *= SLOW_MULTIPLIER;
+        RIGHT_POWER *= SLOW_MULTIPLIER;
+        BACK_POWER *= SLOW_MULTIPLIER;
+    }
 }
 
 //Corrects wheel power based on heading error
@@ -295,6 +314,7 @@ void POWER_CORRECT(){
     float LEFT_RATIO = 0, RIGHT_RATIO = 0, BACK_RATIO = 0;
     float MAX_PERCENT;
     float LEFT_CORRECTION_FACTOR, RIGHT_CORRECTION_FACTOR, BACK_CORRECTION_FACTOR;
+    float SLOW_MULTIPLIER;
 
     //Calculates ratio of counts completed vs total intended counts
     if(LEFT_INTENDED_COUNTS != 0){
@@ -369,11 +389,14 @@ void DRIVE(float x, float y, int POWER){
 
     //Correcting and adjusting path until end condition is met
     while(DRIVE_CONDITION() == 1){
-        //Update Directional Encoder Values
-        //ENCODER_DIRECTIONAL_UPDATE();
+        //Updates distance remaining
+        DISTANCE_UPDATE();
 
         //Corrects heading based on directional encoding
         POWER_CORRECT();
+
+        //Slows down the robot before reaching target
+        SLOWDOWN_CHECK();
 
         //Applies updated motor powers
         START_MOTORS();
