@@ -65,7 +65,7 @@ void startButton();
 void humidifier();
 void Milestone_3();
 void lever();
-boolean RCSData();
+int RCSData();
 void Distance_Calc();
 void RCSFunction();
 
@@ -428,20 +428,21 @@ struct CourseCoordinates p1 = {300, 21.64, 49.25}; //Pre-determined course value
 
 struct CourseCoordinates HUMIDIFIER_LOCATION = {0, 13.95, 49.87};
 struct CourseCoordinates APPLE_LOCATION = {57, 10.69, 19.97};
+struct CourseCoordinates BOTTOM_RAMP_LOCATION = {57, 32.10, 16.18};
 
 
 
-boolean RCSData() {
+int RCSData() {
     Sleep(.5);
     RCSPose* pose = RCS.RequestPosition();
     if (pose == nullptr || (pose->x < 0 && pose->y < 0 && pose->heading < 0)) {
         LCD.WriteLine("No RCS data received.");
-        return false;
+        return 0;
     }
     Robot_Heading = pose->heading;
     X_POS = pose->x;
     Y_POS = pose->y;
-    return true;
+    return 1;
 }
 
 float DesiredHeading = 0;
@@ -460,53 +461,23 @@ void Distance_Calc(CourseCoordinates *target) {
 
     DesiredX = target->CourseX - X_POS;
     DesiredY = target->CourseY - Y_POS;
-
-    /*
-    LCD.Write("Course Heading: ");
-    LCD.WriteLine(target->CourseHeading);
-    LCD.Write("Course X: ");
-    LCD.WriteLine(target->CourseX);
-    LCD.Write("CourseY: ");
-    LCD.WriteLine(target->CourseY);
-    Sleep(0.5);
-    LCD.Clear();
-
-    LCD.Write("Current Heading: ");
-    LCD.WriteLine(Robot_Heading);
-    LCD.Write("Current X: ");
-    LCD.WriteLine(X_POS);
-    LCD.Write("Current Y: ");
-    LCD.WriteLine(Y_POS);
-    Sleep(0.5);
-    LCD.Clear();
-
-    LCD.Write("Heading: ");
-    LCD.WriteLine(DesiredHeading);
-    LCD.Write("X distance:");
-    LCD.WriteLine(DesiredX);
-    LCD.Write("Y distance: ");
-    LCD.WriteLine(DesiredY);
-    LCD.Write("Plugged in value: ");
-    LCD.Write(Robot_Heading);
-    Sleep(0.5);
-    */
 }
 
 void RCSFunction(CourseCoordinates *target) {
-    if (RCSData()) {
+    if (RCSData() == 1) {
         Distance_Calc(target);
     }
 }
 
 void RCSFunctionRotate(CourseCoordinates *target, int speed) {
-    if (RCSData()) {
+    if (RCSData() == 1) {
         Distance_Calc(target);
         RotateDegrees(DesiredHeading, speed);
     }
 }
 
 void RCSFunctionDrive(CourseCoordinates *target, int speed) {
-    if (RCSData()) {
+    if (RCSData() == 1) {
         Distance_Calc(target);
         DriveFieldRelative(Robot_Heading, DesiredX, DesiredY, speed);
     }
@@ -927,14 +898,49 @@ void COMPOST(){
     RotateDegrees(5, 25);
  
     //Rotate continuous servo both directions
-    CONTINUOUS_SERVO.SetDegree(95);
+    CONTINUOUS_SERVO.SetDegree(105);
     Sleep(1.5);
-    CONTINUOUS_SERVO.SetDegree(70);
+    CONTINUOUS_SERVO.SetDegree(65);
     Sleep(1.5);
     CONTINUOUS_SERVO.Off();
 
     //Back away
+    Robot_Heading = 300;
     DRIVE(SQRT32 * 2, 1, 50);
+}
+
+
+//Completes the Apple Basket Task
+void APPLE_BASKET(){
+    //Drives from humidifier to apple basket
+    RotateDegrees(117, 50);
+    
+    Sleep(0.1);
+    
+    DriveFieldRelative(Robot_Heading, -6.7, 15.25, 65);
+
+    RCSFunctionRotate(&APPLE_LOCATION, 50);
+
+    BIG_SERVO_ROTATE(115);
+
+    RCSFunctionDrive(&APPLE_LOCATION, 50);
+
+    //Correct error
+    RCSFunctionDrive(&APPLE_LOCATION, 25);
+
+    RCSFunctionDrive(&APPLE_LOCATION, 25);
+
+    DriveFieldRelative(Robot_Heading, -1, 0, 50);
+
+    BIG_SERVO_ROTATE(80);
+
+    Sleep(0.25);
+
+    DriveFieldRelative(Robot_Heading, 21.41, 6.79, 65);
+
+    RCSFunctionRotate(&BOTTOM_RAMP_LOCATION, 50);
+
+    RCSFunctionDrive(&BOTTOM_RAMP_LOCATION, 50);
 }
 
 void HUMIDIFIER(){
@@ -949,78 +955,6 @@ void HUMIDIFIER(){
 
     //Reads CDS value for humidifer light
     HUMIDIFIER_LIGHT();
-}
-
-//Completes the Apple Basket Task
-void APPLE_BASKET(){
-    //Drives from humidifier to apple basket
-    //Correct heading
-    RCSFunctionRotate(&APPLE_LOCATION, 50);
-    
-    //Drive to humidifier location from any lever
-    RCSFunctionDrive(&APPLE_LOCATION, 50);
-
-    //Correct error
-    RCSFunctionDrive(&APPLE_LOCATION, 25);
- 
-    DRIVE(1, 0, 25);
-
-    //Set Big Servo to initial angle
-    BIG_SERVO_ROTATE(80);
-    
-    Sleep(1.0);
-
-    //Drive hook under basket handle
-    DRIVE(0, 3.0, 15);
-
-    //Pick up basket
-    BIG_SERVO_ROTATE(70);
-
-    Sleep(0.5);
-
-    BIG_SERVO_ROTATE(60);
-
-    Sleep(0.5);
-
-    BIG_SERVO_ROTATE(50);
-
-    Sleep(0.5);
-
-    BIG_SERVO_ROTATE(40);
-
-    Sleep(0.5);
-
-    BIG_SERVO_ROTATE(30);
-
-    Sleep(1.0);
-
-    DRIVE(-5, -21, 50);
-
-    Sleep(0.1);
-
-    RotateDegrees(-90, 25);
-
-    Sleep(0.5);
-
-    //Drive up Ramp
-    DRIVE(0, 35, 50);
-
-    DRIVE(3.5, 0, 25);
-
-    LEFTMOTOR.SetPercent(-25);
-    RIGHTMOTOR.SetPercent(25);
-
-    Sleep(1.0);
-
-    STOP();
-
-    //Set Apple Basket Down
-    BIG_SERVO.Off();
-
-    Sleep(1.0);
-
-    //Drive away
-    DRIVE(0, -5, 15);
 }
 
 void ROBOT_CALIBRATION(){
