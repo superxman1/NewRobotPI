@@ -65,7 +65,7 @@ void startButton();
 void humidifier();
 void Milestone_3();
 void lever();
-void RCSData();
+boolean RCSData();
 void Distance_Calc();
 void RCSFunction();
 
@@ -431,13 +431,17 @@ struct CourseCoordinates APPLE_LOCATION = {57, 10.69, 19.97};
 
 
 
-void RCSData() {
+boolean RCSData() {
     Sleep(.5);
     RCSPose* pose = RCS.RequestPosition();
-
+    if (pose == nullptr || (pose->x < 0 && pose->y < 0 && pose->heading < 0)) {
+        LCD.WriteLine("No RCS data received.");
+        return false;
+    }
     Robot_Heading = pose->heading;
     X_POS = pose->x;
     Y_POS = pose->y;
+    return true;
 }
 
 float DesiredHeading = 0;
@@ -489,9 +493,26 @@ void Distance_Calc(CourseCoordinates *target) {
 }
 
 void RCSFunction(CourseCoordinates *target) {
-    RCSData();
-    Distance_Calc(target);
+    if (RCSData()) {
+        Distance_Calc(target);
+    }
 }
+
+void RCSFunctionRotate(CourseCoordinates *target, int speed) {
+    if (RCSData()) {
+        Distance_Calc(target);
+        RotateDegrees(DesiredHeading, speed);
+    }
+}
+
+void RCSFunctionDrive(CourseCoordinates *target, int speed) {
+    if (RCSData()) {
+        Distance_Calc(target);
+        DriveFieldRelative(Robot_Heading, DesiredX, DesiredY, speed);
+    }
+}
+
+
 
 void DriveFieldRelative(float headingDeg, float fieldX, float fieldY, int power)
 {
@@ -918,17 +939,13 @@ void COMPOST(){
 
 void HUMIDIFIER(){
     //Correct heading
-    RCSFunction(&HUMIDIFIER_LOCATION);
-    RotateDegrees(DesiredHeading, 50);
-    WaitForTouch();
+    RCSFunctionRotate(&HUMIDIFIER_LOCATION, 50);
     
     //Drive to humidifier location from any lever
-    RCSFunction(&HUMIDIFIER_LOCATION);
-    DriveFieldRelative(Robot_Heading, DesiredX, DesiredY, 50);
+    RCSFunctionDrive(&HUMIDIFIER_LOCATION, 50);
 
     //Correct error
-    RCSFunction(&HUMIDIFIER_LOCATION);
-    DriveFieldRelative(Robot_Heading, DesiredX, DesiredY, 50);
+    RCSFunctionDrive(&HUMIDIFIER_LOCATION, 25);
 
     //Reads CDS value for humidifer light
     HUMIDIFIER_LIGHT();
@@ -938,21 +955,18 @@ void HUMIDIFIER(){
 void APPLE_BASKET(){
     //Drives from humidifier to apple basket
     //Correct heading
-    RCSFunction(&APPLE_LOCATION);
-    RotateDegrees(DesiredHeading, 50);
+    RCSFunctionRotate(&APPLE_LOCATION, 50);
     
     //Drive to humidifier location from any lever
-    RCSFunction(&APPLE_LOCATION);
-    DriveFieldRelative(Robot_Heading, DesiredX, DesiredY, 50);
+    RCSFunctionDrive(&APPLE_LOCATION, 50);
 
     //Correct error
-    RCSFunction(&APPLE_LOCATION);
-    DriveFieldRelative(Robot_Heading, DesiredX, DesiredY, 50);
-
+    RCSFunctionDrive(&APPLE_LOCATION, 25);
+ 
     DRIVE(1, 0, 25);
 
     //Set Big Servo to initial angle
-    BIG_SERVO.SetDegree(80);
+    BIG_SERVO_ROTATE(80);
     
     Sleep(1.0);
 
@@ -960,23 +974,23 @@ void APPLE_BASKET(){
     DRIVE(0, 3.0, 15);
 
     //Pick up basket
-    BIG_SERVO.SetDegree(70);
+    BIG_SERVO_ROTATE(70);
 
     Sleep(0.5);
 
-    BIG_SERVO.SetDegree(60);
+    BIG_SERVO_ROTATE(60);
 
     Sleep(0.5);
 
-    BIG_SERVO.SetDegree(50);
+    BIG_SERVO_ROTATE(50);
 
     Sleep(0.5);
 
-    BIG_SERVO.SetDegree(40);
+    BIG_SERVO_ROTATE(40);
 
     Sleep(0.5);
 
-    BIG_SERVO.SetDegree(30);
+    BIG_SERVO_ROTATE(30);
 
     Sleep(1.0);
 
