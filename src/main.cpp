@@ -88,7 +88,7 @@ void Stop(); */
 
 #define START_LIGHT 1.5
 #define RED_LIGHT 2.0
-#define BLUE_LIGHT_MIN 2.0
+#define BLUE_LIGHT_MIN 1.70
 #define BLUE_LIGHT_MAX 2.6
 
 
@@ -426,6 +426,9 @@ struct CourseCoordinates {
 struct CourseCoordinates p1 = {300, 21.64, 49.25}; //Pre-determined course values
 // Create struct for each desired position
 
+struct CourseCoordinates HUMIDIFIER_LOCATION = {0, 13.95, 49.87};
+struct CourseCoordinates APPLE_LOCATION = {57, 10.69, 19.97};
+
 
 
 void RCSData() {
@@ -562,19 +565,31 @@ void RotateDegrees(float angleDeg, float speed){
     STOP();
 }
 
-int CDS_CHECK(){
+int HUMIDIFIER_LIGHT(){
         LCD.Clear();
         LCD.WriteLine(CdS_cell.Value());
         Sleep(0.3);
 
-    if(CdS_cell.Value() < RED_LIGHT){
+        LCD.Clear();
+    if(CdS_cell.Value() < BLUE_LIGHT_MIN){
+        //Writes information to screen
+        LCD.WriteLine("RED LIGHT DETECTED");
+        LCD.WriteLine(CdS_cell.Value());
         return 0; //Red
     }
         else if(CdS_cell.Value() > BLUE_LIGHT_MIN && CdS_cell.Value() < BLUE_LIGHT_MAX){
-        return 1; //Blue
+        //Writes information to screen
+        LCD.WriteLine("BLUE LIGHT DETECTED");
+        LCD.WriteLine(CdS_cell.Value());
+        
+            return 1; //Blue
     }
     else{
-        return 2; //Red
+        //Writes information to screen
+        LCD.WriteLine("ERROR; NOT IN RANGE");
+        LCD.WriteLine(CdS_cell.Value());
+
+        return 2; //NULL
     }
 
 }
@@ -868,6 +883,7 @@ void WaitForTouch()
     }
 }*/
 
+//Completes start button sensing
 void START_BUTTON(){
     while(CdS_cell.Value() > RED_LIGHT);
 
@@ -876,20 +892,64 @@ void START_BUTTON(){
     DRIVE(0, -.5, 25);
 
     DRIVE(0, 1.5, 25);
+
+    RotateDegrees(-72, 50);
 }
 
-//Drives from start to Apple Basket
-void DRIVE_TO_APPLE_BASKET(){
-    DRIVE(0, 18, 50);
+//Completes compost task
+void COMPOST(){
+
+    //Drive to Compost Bin
+    DRIVE(-SQRT32 * 6, -6/2, 50);
+    DRIVE(4.5/2, -SQRT32 * 4.5, 50);
+    DRIVE(-SQRT32 * 3.5, -3.5/2, 50);
+    RotateDegrees(5, 25);
+ 
+    //Rotate continuous servo both directions
+    CONTINUOUS_SERVO.SetDegree(95);
+    Sleep(1.5);
+    CONTINUOUS_SERVO.SetDegree(70);
+    Sleep(1.5);
+    CONTINUOUS_SERVO.Off();
+
+    //Back away
+    DRIVE(SQRT32 * 2, 1, 50);
+}
+
+void HUMIDIFIER(){
+    //Correct heading
+    RCSFunction(&HUMIDIFIER_LOCATION);
+    RotateDegrees(DesiredHeading, 50);
+    WaitForTouch();
     
-    //Rotate Robot to correct orientation
-    RotateDegrees(45, 25);
+    //Drive to humidifier location from any lever
+    RCSFunction(&HUMIDIFIER_LOCATION);
+    DriveFieldRelative(Robot_Heading, DesiredX, DesiredY, 50);
+
+    //Correct error
+    RCSFunction(&HUMIDIFIER_LOCATION);
+    DriveFieldRelative(Robot_Heading, DesiredX, DesiredY, 50);
+
+    //Reads CDS value for humidifer light
+    HUMIDIFIER_LIGHT();
 }
 
 //Completes the Apple Basket Task
 void APPLE_BASKET(){
-    //Drives from start to Apple Basket
-    DRIVE_TO_APPLE_BASKET();
+    //Drives from humidifier to apple basket
+    //Correct heading
+    RCSFunction(&APPLE_LOCATION);
+    RotateDegrees(DesiredHeading, 50);
+    
+    //Drive to humidifier location from any lever
+    RCSFunction(&APPLE_LOCATION);
+    DriveFieldRelative(Robot_Heading, DesiredX, DesiredY, 50);
+
+    //Correct error
+    RCSFunction(&APPLE_LOCATION);
+    DriveFieldRelative(Robot_Heading, DesiredX, DesiredY, 50);
+
+    DRIVE(1, 0, 25);
 
     //Set Big Servo to initial angle
     BIG_SERVO.SetDegree(80);
@@ -1036,51 +1096,23 @@ void LEVER(){
 }
 
 //Completes the compost mechanism task
-void COMPOST(){
-    //Rotate mechanism towards bin
-    RotateDegrees(-70, 25);
 
-    //Drive to Compost Bin
-    DRIVE(-SQRT32 * 6, -6/2, 50);
-    Sleep(0.5);
-    DRIVE(4.5/2, -SQRT32 * 4.5, 50);
-    Sleep(0.5);
-    DRIVE(-SQRT32 * 3.5, -3.5/2, 50);
-    Sleep(0.5);
-    RotateDegrees(5, 25);
- 
-    CONTINUOUS_SERVO.SetDegree(95);
-    Sleep(1.5);
-    CONTINUOUS_SERVO.SetDegree(70);
-    Sleep(1.5);
-    CONTINUOUS_SERVO.Off();
-
-    DRIVE(SQRT32 * 11, 11/2, 50);
-
-
-
-}
 
 void ERCMain()
-{   
-    // START_BUTTON();
-    
+{
+    //RCS AND ROBOT CALIBRATION
     ROBOT_CALIBRATION();
     WaitForFinalAction();
-    RCSFunction(&p1);
-    RotateDegrees(DesiredHeading, 50);
-    RCSFunction(&p1);
-    LCD.Write(" Heading: ");
-    LCD.WriteLine(Robot_Heading);
-    LCD.Write("Desired X: ");
-    LCD.WriteLine(DesiredX);
-    LCD.Write("Desired Y: ");
-    LCD.WriteLine(DesiredY);
-    WaitForTouch();
-    DriveFieldRelative(Robot_Heading, DesiredX, DesiredY, 50);
+    Sleep(0.5);
 
-    RCSFunction(&p1);
-    DriveFieldRelative(Robot_Heading, DesiredX, DesiredY, 50);
+    //Reads start button value
+    START_BUTTON();
+
+    //Completes compost task
+    COMPOST();
+
+    //Completes apple basket task
+    APPLE_BASKET();
     
 
     // COMPOST();
