@@ -30,7 +30,7 @@
 #define Lever_Down_ANGLE 90
 #define Lever_Up_ANGLE 0
 #define Servo_Max_Angle 135
-#define Servo_Min_Angle 75
+#define Servo_Min_Angle 70
 
 //Compost Mechanism Constants
 #define Compost_Speed 25.0
@@ -68,6 +68,7 @@ void lever();
 int RCSData();
 void Distance_Calc();
 void RCSFunction();
+void FLIP_LEVER();
 
 /* void Drive_Forward();
 void Drive_Back();
@@ -393,7 +394,7 @@ void DRIVE(float x, float y, int POWER){
         DISTANCE_UPDATE();
 
         //Corrects heading based on directional encoding
-        POWER_CORRECT();
+        //POWER_CORRECT();
 
         //Slows down the robot before reaching target
         //SLOWDOWN_CHECK();
@@ -428,9 +429,12 @@ struct CourseCoordinates p1 = {300, 21.64, 49.25}; //Pre-determined course value
 
 struct CourseCoordinates HUMIDIFIER_LOCATION = {0, 13.95, 49.87};
 struct CourseCoordinates APPLE_LOCATION = {57, 10.69, 19.97};
-struct CourseCoordinates BOTTOM_RAMP_LOCATION = {321, 32.10, 16.18};
+struct CourseCoordinates BOTTOM_RAMP_LOCATION = {330, 32.10, 16.18};
 struct CourseCoordinates TOP_RAMP_LOCATION = {321, 33.26, 54.87};
-
+struct CourseCoordinates LEVER_LOCATION = {10, 17.15, 58.64};
+struct CourseCoordinates LEFT_LEVER_LOCATION = {14, 11.78, 57.17};
+struct CourseCoordinates MIDDLE_LEVER_LOCATION = {13, 14.90, 61.09};
+struct CourseCoordinates RIGHT_LEVER_LOCATION = {16, 18.49, 64.71};
 
 
 int RCSData() {
@@ -900,9 +904,9 @@ void COMPOST(){
  
     //Rotate continuous servo both directions
     CONTINUOUS_SERVO.SetDegree(105);
-    Sleep(1.5);
+    Sleep(1.4);
     CONTINUOUS_SERVO.SetDegree(65);
-    Sleep(1.5);
+    Sleep(1.4);
     CONTINUOUS_SERVO.Off();
 
     //Back away
@@ -924,29 +928,93 @@ void APPLE_BASKET(){
 
     BIG_SERVO_ROTATE(115);
 
-    RCSFunctionDrive(&APPLE_LOCATION, 50, 1.0);
+    RCSFunctionDrive(&APPLE_LOCATION, 50, 0.9);
 
     //Correct error
-    RCSFunctionDrive(&APPLE_LOCATION, 25, 1.0  );
-
     RCSFunctionDrive(&APPLE_LOCATION, 25, 1.0);
 
     DriveFieldRelative(Robot_Heading, -1, 0, 50);
 
-    BIG_SERVO_ROTATE(75);
+    BIG_SERVO_ROTATE(70);
 
     Sleep(0.25);
 
-    DriveFieldRelative(Robot_Heading, 19.41, -6.79, 65);
+    DriveFieldRelative(Robot_Heading, 17.41, -6.79, 65);
 
     RCSFunctionRotate(&BOTTOM_RAMP_LOCATION, 50);
 
-    RCSFunctionDrive(&BOTTOM_RAMP_LOCATION, 50, 1.0);
+    RCSFunctionDrive(&BOTTOM_RAMP_LOCATION, 25, 1.0);
 
-    WaitForTouch();
+    //Drive up ramp
+    DriveFieldRelative(Robot_Heading, 0, 32, 50);
+    DriveFieldRelative(Robot_Heading, -2, 0, 50);
 
-    DriveFieldRelative(Robot_Heading, 0, 36, 50);
+    RCSFunctionRotate(&TOP_RAMP_LOCATION, 50);
+
+    RCSFunctionDrive(&TOP_RAMP_LOCATION, 50, 1.0);
+
+    DriveFieldRelative(Robot_Heading, 0, 3, 50);
+
+    BIG_SERVO_ROTATE(80);
+
+    Sleep(0.1);
+
+    BIG_SERVO.Off();
+
+    DriveFieldRelative(Robot_Heading, 0, -5, 50);
 }
+
+//Completes the Fertilizer Lever Task
+void LEVER(){
+    Sleep(0.5);
+    
+    BIG_SERVO_ROTATE(110);
+    
+    DriveFieldRelative(Robot_Heading, -16.11, 8.67, 50);
+
+    //Corrects location and heading
+    RCSFunctionRotate(&LEVER_LOCATION, 50);
+    RCSFunctionDrive(&LEVER_LOCATION, 50, 1.0);
+
+    //Reads lever information
+    int CORRECT_LEVER = RCS.GetLever();
+
+    //Process for left lever
+    if(CORRECT_LEVER == 0){
+        //Prints correct lever to screen
+        LCD.Clear();
+        LCD.WriteLine("LEFT LEVER READ");
+
+        //Moves to correct lever
+        RCSFunctionRotate(&LEFT_LEVER_LOCATION, 50);
+        RCSFunctionDrive(&LEFT_LEVER_LOCATION, 25, 0.8);
+    }
+
+    //Process for middle lever
+    if(CORRECT_LEVER == 1){
+        //Prints correct lever to screen
+        LCD.Clear();
+        LCD.WriteLine("MIDDLE LEVER READ");
+
+        //Moves to correct lever
+        RCSFunctionRotate(&MIDDLE_LEVER_LOCATION, 50);
+        RCSFunctionDrive(&MIDDLE_LEVER_LOCATION, 25, 0.9);
+    }
+
+    //Process for right lever
+    if(CORRECT_LEVER == 2){
+        //Prints correct lever to screen
+        LCD.Clear();
+        LCD.WriteLine("RIGHT LEVER READ");
+
+        //Moves to correct lever
+        RCSFunctionRotate(&RIGHT_LEVER_LOCATION, 50);
+        RCSFunctionDrive(&RIGHT_LEVER_LOCATION, 25, 0.8);
+    }
+
+    FLIP_LEVER();
+}
+
 
 void HUMIDIFIER(){
     //Correct heading
@@ -966,93 +1034,38 @@ void ROBOT_CALIBRATION(){
     //Initializes the RCS system
     RCS.InitializeTouchMenu("1130D6KKR");
 
-    //Set servo 90 degrees
-    BIG_SERVO.SetDegree(90);
+    //Set servo up degrees
+    BIG_SERVO_ROTATE(75);
 }
 
 //Flips lever down and up
 void FLIP_LEVER(){
-    //Flips lever down
-    BIG_SERVO.SetDegree(135);
+    //Flip lever down
+    BIG_SERVO_ROTATE(132);
 
-    //Move lever arm below fertilizer lever
-    RotateDegrees(5, 10);
-    BIG_SERVO.SetDegree(105);  
-    RotateDegrees(-5, 10);
+    Sleep(1.0);
 
-    //Waits 5 seconds
-    Sleep(5.0);
+    BIG_SERVO_ROTATE(120);
 
-    //Flips lever up
-    BIG_SERVO.SetDegree(90); //ADJUST ANGLE
+    RotateDegrees(15, 50);
+
+    BIG_SERVO_ROTATE(135);
+
+    RotateDegrees(-15, 50);
+
+    Sleep(4.0);
+
+    BIG_SERVO_ROTATE(120);
 }
 
-//Completes the Fertilizer Lever Task
-void LEVER(){
-    //NEED CODE TO DRIVE TO LEVERS
-    DRIVE(-5, 0, 50);
-
-    RotateDegrees(45, 25);
-
-    //Set servo arm to  prepare for flipping lever down
-    BIG_SERVO.SetDegree(60);
-
-    DRIVE(0, 13, 50);
-
-    //Reads lever information
-    int CORRECT_LEVER = RCS.GetLever();
-
-    //Process for left lever
-    if(CORRECT_LEVER == 0){
-        //Prints correct lever to screen
-        LCD.Clear();
-        LCD.WriteLine("LEFT LEVER READ");
-
-        //Sleep for testing
-        //DELETE LATER
-        Sleep(1.0);
-
-        //Align with left lever
-        DRIVE(-2, 0, 25);
-
-        FLIP_LEVER();
-    }
-
-    //Process for middle lever
-    if(CORRECT_LEVER == 1){
-        //Prints correct lever to screen
-        LCD.Clear();
-        LCD.WriteLine("MIDDLE LEVER READ");
-
-        //Sleep for testing
-        //DELETE LATER
-        Sleep(1.0);
-
-        FLIP_LEVER();
-    }
-
-    //Process for right lever
-    if(CORRECT_LEVER == 2){
-        //Prints correct lever to screen
-        LCD.Clear();
-        LCD.WriteLine("RIGHT LEVER READ");
-
-        //Sleep for testing
-        //DELETE LATER
-        Sleep(1.0);
-
-        //Align with right lever
-        DRIVE(2, 0, 25);
-
-        FLIP_LEVER();
-    }
-}
 
 //Completes the compost mechanism task
 
 
 void ERCMain()
 {
+    int i = 135;
+
     //RCS AND ROBOT CALIBRATION
     ROBOT_CALIBRATION();
     WaitForFinalAction();
@@ -1067,29 +1080,6 @@ void ERCMain()
     //Completes apple basket task
     APPLE_BASKET();
     
-
-    // COMPOST();
-    // TestGUI();
-
-    /*
-    WaitForTouch();
-    
-    DriveFieldRelative(Robot_Heading, 2, 3, 25);
-    WaitForTouch();
-    DriveFieldRelative(Robot_Heading, 4, -6, 25);
-    WaitForTouch();
-    DriveFieldRelative(Robot_Heading, -7, -3, 25);
-    WaitForTouch();
-    DriveFieldRelative(Robot_Heading, -5, 6, 25);
-
-    WaitForTouch();
-
-    DriveFieldRelative(Robot_Heading, 2, 3, 50);
-    WaitForTouch();
-    DriveFieldRelative(Robot_Heading, 4, -6, 50);
-    WaitForTouch();
-    DriveFieldRelative(Robot_Heading, -7, -3, 50);
-    WaitForTouch();
-    DriveFieldRelative(Robot_Heading, -5, 6, 50);
-    */
+    //Completes lever task
+    LEVER();
 }
