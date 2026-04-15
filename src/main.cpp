@@ -1043,6 +1043,8 @@ void FLIP_LEVER(){
     //Flip lever down
     BIG_SERVO_ROTATE(132);
 
+    float startTime = TimeNow();
+
     Sleep(1.0);
 
     BIG_SERVO_ROTATE(120);
@@ -1051,11 +1053,17 @@ void FLIP_LEVER(){
 
     BIG_SERVO_ROTATE(135);
 
+    Sleep(.5);
+
     RotateDegrees(-15, 50);
 
-    Sleep(4.0);
+    while(TimeNow() - startTime < 5.0){
+        Sleep(0.1);
+    }
 
     BIG_SERVO_ROTATE(120);
+
+    DriveFieldRelative(Robot_Heading, 2, -2, 50);
 }
 
 
