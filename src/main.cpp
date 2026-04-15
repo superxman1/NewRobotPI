@@ -428,7 +428,7 @@ struct CourseCoordinates p1 = {300, 21.64, 49.25}; //Pre-determined course value
 
 struct CourseCoordinates HUMIDIFIER_LOCATION = {0, 13.95, 49.87};
 struct CourseCoordinates APPLE_LOCATION = {57, 10.69, 19.97};
-struct CourseCoordinates BOTTOM_RAMP_LOCATION = {57, 32.10, 16.18};
+struct CourseCoordinates BOTTOM_RAMP_LOCATION = {321, 32.10, 16.18};
 struct CourseCoordinates TOP_RAMP_LOCATION = {321, 33.26, 54.87};
 
 
@@ -946,16 +946,6 @@ void APPLE_BASKET(){
     WaitForTouch();
 
     DriveFieldRelative(Robot_Heading, 0, 36, 50);
-
-    DRIVE(3, 0, 50);
-
-    RCSFunctionRotate(&TOP_RAMP_LOCATION, 50);
-
-    RCSFunctionDrive(&TOP_RAMP_LOCATION, 50);
-
-    BIG_SERVO.Off();
-
-    DRIVE(0, -3, 50);
 }
 
 void HUMIDIFIER(){
