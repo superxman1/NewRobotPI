@@ -477,10 +477,10 @@ void RCSFunctionRotate(CourseCoordinates *target, int speed) {
     }
 }
 
-void RCSFunctionDrive(CourseCoordinates *target, int speed) {
+void RCSFunctionDrive(CourseCoordinates *target, int speed, float distMultiplier) {
     if (RCSData() == 1) {
         Distance_Calc(target);
-        DriveFieldRelative(Robot_Heading, DesiredX, DesiredY, speed);
+        DriveFieldRelative(Robot_Heading, DesiredX * distMultiplier, DesiredY * distMultiplier, speed);
     }
 }
 
@@ -924,12 +924,12 @@ void APPLE_BASKET(){
 
     BIG_SERVO_ROTATE(115);
 
-    RCSFunctionDrive(&APPLE_LOCATION, 50);
+    RCSFunctionDrive(&APPLE_LOCATION, 50, 1.0);
 
     //Correct error
-    RCSFunctionDrive(&APPLE_LOCATION, 25);
+    RCSFunctionDrive(&APPLE_LOCATION, 25, 1.0  );
 
-    RCSFunctionDrive(&APPLE_LOCATION, 25);
+    RCSFunctionDrive(&APPLE_LOCATION, 25, 1.0);
 
     DriveFieldRelative(Robot_Heading, -1, 0, 50);
 
@@ -941,7 +941,7 @@ void APPLE_BASKET(){
 
     RCSFunctionRotate(&BOTTOM_RAMP_LOCATION, 50);
 
-    RCSFunctionDrive(&BOTTOM_RAMP_LOCATION, 50);
+    RCSFunctionDrive(&BOTTOM_RAMP_LOCATION, 50, 1.0);
 
     WaitForTouch();
 
@@ -953,10 +953,10 @@ void HUMIDIFIER(){
     RCSFunctionRotate(&HUMIDIFIER_LOCATION, 50);
     
     //Drive to humidifier location from any lever
-    RCSFunctionDrive(&HUMIDIFIER_LOCATION, 50);
+    RCSFunctionDrive(&HUMIDIFIER_LOCATION, 50, 1.0);
 
     //Correct error
-    RCSFunctionDrive(&HUMIDIFIER_LOCATION, 25);
+    RCSFunctionDrive(&HUMIDIFIER_LOCATION, 25, 1.0);
 
     //Reads CDS value for humidifer light
     HUMIDIFIER_LIGHT();
