@@ -437,7 +437,7 @@ struct CourseCoordinates MIDDLE_LEVER_LOCATION = {12, 12.10, 61.08};
 struct CourseCoordinates RIGHT_LEVER_LOCATION = {12, 15.87, 64.45};
 struct CourseCoordinates RED_LIGHT_LOCATION = {0, 9.18, 51.45};
 struct CourseCoordinates BLUE_LIGHT_LOCATION = {0, 9.22, 47.73};
-struct CourseCoordinates WINDOW_LOCATION = {157, 16.21, 45.04};
+struct CourseCoordinates WINDOW_LOCATION = {145, 17.65, 44.98};
 
 int RCSData() {
     Sleep(.5);
@@ -638,7 +638,7 @@ void FLIP_LEVER(){
     RotateDegrees(-60, 50);
 
 
-    while(TimeNow() - startTime < 5.5){
+    while(TimeNow() - startTime < 5.25){
         Sleep(0.01);
     }
 
@@ -665,6 +665,8 @@ void START_BUTTON(){
     DRIVE(0, -.4, 50);
 
     DRIVE(0, 1.5, 50);
+
+    Sleep(0.2);
 
     RotateDegrees(-72, 50);
 }
@@ -818,6 +820,9 @@ void HUMIDIFIER(){
 }
 
 void WINDOW(){
+    //Back away from the humidifier
+    DriveFieldRelative(Robot_Heading, 4, 0, 50);
+
     //Correct heading
     RCSFunctionRotate(&WINDOW_LOCATION, 50);
 
@@ -838,6 +843,15 @@ void WINDOW(){
     RotateDegrees(150, 50);
 }
 
+void FinalButton(){
+    RotateDegrees(-100, 50);
+
+    RCSData();
+
+    DriveFieldRelative(Robot_Heading, 30, 0, 75);
+
+    DriveFieldRelative(Robot_Heading, 0, -50, 75);
+}
 
 //Completes the compost mechanism task
 
@@ -868,9 +882,5 @@ void ERCMain()
 
     WINDOW();
 
-    while(1){
-        LCD.Clear();
-        LCD.Write(CdS_cell.Value());
-        Sleep(0.4);
-    }
+    FinalButton();
 }
