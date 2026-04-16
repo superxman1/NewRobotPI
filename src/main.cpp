@@ -438,6 +438,7 @@ struct CourseCoordinates RIGHT_LEVER_LOCATION = {12, 15.87, 64.45};
 struct CourseCoordinates RED_LIGHT_LOCATION = {0, 9.18, 51.45};
 struct CourseCoordinates BLUE_LIGHT_LOCATION = {0, 9.22, 47.73};
 struct CourseCoordinates WINDOW_LOCATION = {145, 17.65, 44.98};
+struct CourseCoordinates FINAL_Top_Ramp_LOCATION = {321, 31.26, 52.87};
 
 int RCSData() {
     Sleep(.5);
@@ -846,9 +847,7 @@ void WINDOW(){
 void FinalButton(){
     RotateDegrees(-100, 50);
 
-    RCSData();
-
-    DriveFieldRelative(Robot_Heading, 30, 0, 75);
+    RCSFunctionDrive(&FINAL_Top_Ramp_LOCATION, 75, 1.0);
 
     DriveFieldRelative(Robot_Heading, 0, -50, 75);
 }
