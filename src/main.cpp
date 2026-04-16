@@ -89,7 +89,7 @@ void Stop(); */
 
 #define START_LIGHT 1.5
 #define RED_LIGHT 2.0
-#define BLUE_LIGHT_MIN 1.70
+#define BLUE_LIGHT_MIN 1.50
 #define BLUE_LIGHT_MAX 2.6
 
 
@@ -432,10 +432,12 @@ struct CourseCoordinates APPLE_LOCATION = {57, 10.69, 19.97};
 struct CourseCoordinates BOTTOM_RAMP_LOCATION = {330, 32.10, 16.18};
 struct CourseCoordinates TOP_RAMP_LOCATION = {321, 33.26, 54.87};
 struct CourseCoordinates LEVER_LOCATION = {10, 17.15, 58.64};
-struct CourseCoordinates LEFT_LEVER_LOCATION = {14, 11.78, 57.17};
-struct CourseCoordinates MIDDLE_LEVER_LOCATION = {13, 14.90, 61.09};
-struct CourseCoordinates RIGHT_LEVER_LOCATION = {16, 18.49, 64.71};
-
+struct CourseCoordinates LEFT_LEVER_LOCATION = {8, 9.18, 56.46};
+struct CourseCoordinates MIDDLE_LEVER_LOCATION = {12, 12.10, 61.08};
+struct CourseCoordinates RIGHT_LEVER_LOCATION = {12, 15.87, 64.45};
+struct CourseCoordinates RED_LIGHT_LOCATION = {0, 9.18, 51.45};
+struct CourseCoordinates BLUE_LIGHT_LOCATION = {0, 9.22, 47.73};
+struct CourseCoordinates WINDOW_LOCATION = {157, 16.21, 45.04};
 
 int RCSData() {
     Sleep(.5);
@@ -572,6 +574,9 @@ int HUMIDIFIER_LIGHT(){
         //Writes information to screen
         LCD.WriteLine("RED LIGHT DETECTED");
         LCD.WriteLine(CdS_cell.Value());
+
+        RCSFunctionDrive(&RED_LIGHT_LOCATION, 50, 1.0);
+
         return 0; //Red
     }
         else if(CdS_cell.Value() > BLUE_LIGHT_MIN && CdS_cell.Value() < BLUE_LIGHT_MAX){
@@ -579,7 +584,9 @@ int HUMIDIFIER_LIGHT(){
         LCD.WriteLine("BLUE LIGHT DETECTED");
         LCD.WriteLine(CdS_cell.Value());
         
-            return 1; //Blue
+        RCSFunctionDrive(&BLUE_LIGHT_LOCATION, 50, 1.0);
+
+        return 1; //Blue
     }
     else{
         //Writes information to screen
@@ -602,123 +609,45 @@ void BIG_SERVO_ROTATE(float angle){
     BIG_SERVO.SetDegree(angle);
 }
 
-/*void Milestone_2(){
-    DriveTEST(180, 20.0, 1.0);
 
-    DriveTEST(0, 20.0, 1.0);
+void ROBOT_CALIBRATION(){
+    //Initializes the RCS system
+    RCS.InitializeTouchMenu("1130D6KKR");
 
-    RotateDegrees(44.06, 25);
+    //Set servo up degrees
+    BIG_SERVO_ROTATE(75);
+}
 
-    DriveTEST(0, 25.0, 3.0);
+//Flips lever down and up
+void FLIP_LEVER(){
+    //Flip lever down
+    BIG_SERVO_ROTATE(132);
 
-    DriveTEST(90, 25.0, 1.0);
+    float startTime = TimeNow();
 
-    DriveTEST(0, 50, 30.5);
+    Sleep(1.0);
 
-    RotateDegrees((float) -87.5, 25);
+    BIG_SERVO_ROTATE(120);
 
-    DriveTEST(0, 50, 13.2);
+    RotateDegrees(60, 50);
 
-    
-    double legLength = 0.1;
-    double legStep = 0.1;
-    double maxLegLength = 8.0;
-    double maxLRLegLength = .3;
-    double LRLen;
-    int Light = CDS_CHECK();
+    BIG_SERVO_ROTATE(135);
 
-    while (Light == 2 && legLength <= maxLegLength)
-    {
-        if(legLength > maxLRLegLength){
-            LRLen = maxLRLegLength;
-        } else {
-            LRLen = legLength;
-        }
-        DriveTEST(180, 20.0, legLength);
-        Light = CDS_CHECK();
-        if (Light != 2) break;
+    Sleep(.5);
 
-        DriveTEST(90, 20.0, LRLen);
-        Light = CDS_CHECK();
-        if (Light != 2) break;
+    RotateDegrees(-60, 50);
 
-        legLength += legStep;
 
-        DriveTEST(0, 20.0, legLength);
-        Light = CDS_CHECK();
-        if (Light != 2) break;
-
-        DriveTEST(270, 20.0, LRLen);
-        Light = CDS_CHECK();
-        if (Light != 2) break;
-
-        legLength += legStep;
-    }
-   
-    
-    if(Light == 0){ //Red
-        LCD.Clear();
-        LCD.WriteLine("Red Detected");
-        Sleep(1.0);
-        DriveTEST(90, 20.0, .8);
-        DriveTEST(0, 20.0, 5.0);
-        /*
-        rightdrive.SetPercent(30);
-        leftdrive.SetPercent(30);
-        Sleep(2.0);
-        StopAll(); 
-        Sleep(1.0); 
-        DriveTEST(180, 20.0, 5.0);
-        DriveTEST(-90, 20.0, .8);
+    while(TimeNow() - startTime < 5.5){
+        Sleep(0.01);
     }
 
-    if(Light == 1){ //Blue
-        LCD.Clear();
-        LCD.WriteLine("Blue Detected");
-        Sleep(1.0);
-        DriveTEST(-90, 20.0, .8);
-        DriveTEST(0, 20.0, 5.0);
-        /*
-        rightdrive.SetPercent(30);
-        leftdrive.SetPercent(30);
-        Sleep(2.0);
-        StopAll(); 
-        Sleep(1.0);  
-        DriveTEST(180, 20.0, 5.0);
-        DriveTEST(90, 20.0, .8);
-    }
+    BIG_SERVO_ROTATE(120);
 
-    DriveTEST(180, 20.0, 17.0);
-    
-    RotateDegrees(-95, 25);
+    Sleep(0.1);
 
-    DriveTEST(0, 50.0, 45.0);
-
-    DriveTEST(180, 20.0, 2.0);
-
-    DriveTEST(-90, 50.0, 10.0);
-}*/
-
-/*void DriveRightTime(float speed, float time)
-{
-    float Angle = 90.0 * Radian_Conversion;
-
-    // Kiwi wheel contributions (all 3 wheels active)
-    float frontmult = sin(Angle);
-    float rightmult = sin(Angle - (2 * PI / 3));
-    float leftmult  = sin(Angle - (4 * PI / 3));
-
-    // Set motor speeds
-    frontdrive.SetPercent((speed * frontmult));
-    rightdrive.SetPercent((speed * rightmult));
-    leftdrive.SetPercent(-(speed * leftmult));
-
-    Sleep(time);
-
-    StopAll();
-    
-    return;
-}*/
+    DriveFieldRelative(Robot_Heading, 2, -4, 50);
+}
 
 void WaitForTouch()
 {
@@ -727,168 +656,15 @@ void WaitForTouch()
     while (!LCD.Touch(&x, &y)) {}    // wait for press
 }
 
-/*void BacktoWall(float time){
-    leftdrive.SetPercent(-50);
-    frontdrive.SetPercent(50);
-
-    Sleep(time);
-
-    StopAll();
-    return;
-}*/
-
-/*void FronttoWall(float time){
-    leftdrive.SetPercent(50);
-    frontdrive.SetPercent(-50);
-
-    Sleep(time);
-
-    StopAll();
-    return;
-}*/
-
-/*void Ramp(float time){
-    rightdrive.SetPercent(75);
-    frontdrive.SetPercent(-75);
-
-    Sleep(time);
-
-    StopAll();
-
-    return;
-}*/
-
-/*void Milestone_3(){
-    WaitForTouch();
-    
-    //Start Button
-    startButton();
-    DriveTEST(180, 20.0, 1.0);
-    DriveTEST(0, 20.0, 1.0);
-
-    RotateDegrees(-15, 25);
-
-    DriveXY(6, 0, 75);
-    DriveXY(0, 5, 75);
-
-    RotateDegrees(10, 75);
-
-    //DriveXY(40, 0, 75);
-
-    Ramp(2.0);
-
-    RotateDegrees(-120, 75);
-
-    BacktoWall(1.5);
-
-    DriveTEST(210, 50, 5);
-
-    RotateDegrees(-15, 50);
-
-    BacktoWall(0.2);
-
-    Sleep(1.0);
-
-    FronttoWall(1.15);
-
-    Sleep(1.0);
-
-    RotateDegrees(-30, 50);
-
-    Sleep(1.0);
-
-    Ramp(0.4);
-
-    Sleep(1.0);
-
-    DriveTEST(135, 25, 2);
-
-    Sleep(1.0);
-
-    RotateDegrees(80, 65);
-
-    Ramp(0.1);
-
-    RotateDegrees(-150, 50);
-}*/
-
-/*void lever() {
-    int correctLever = RCS.GetLever();
-    Pivot_Set_Angle(Lever_Up_ANGLE);
-
-    if(correctLever == 0) { // left lever
-        LCD.WriteLine("Left Lever");
-        //drive left to lever
-        Pivot_Set_Angle(Lever_Down_ANGLE);
-        Sleep(5.0);
-        //drive backwards slightly
-        Pivot_Set_Angle(Lever_Down_ANGLE);
-        //drive fowards slightly
-        Pivot_Set_Angle(Lever_Up_ANGLE);
-        // drive backwards and to the right to initial position (for consistency)
-    }
-    else if(correctLever == 1) { // middle lever
-        LCD.WriteLine("Middle Lever");
-        Pivot_Set_Angle(Lever_Down_ANGLE);
-        Sleep(5.0);
-        // drive backwards slightly
-        Pivot_Set_Angle(Lever_Down_ANGLE); // should be lower than previous one
-        //drive forwards slightly
-        Pivot_Set_Angle(Lever_Up_ANGLE);
-        //drive backward to initial position
-    }
-    else if(correctLever == 2) { //right lever
-        LCD.WriteLine("Right Lever");
-        //drive right to lever
-        Pivot_Set_Angle(Lever_Down_ANGLE);
-        Sleep(5.0);
-        //drive backwards slightly
-        Pivot_Set_Angle(Lever_Down_ANGLE); // lower than previous angle
-        // drive fowards slightly
-        Pivot_Set_Angle(Lever_Up_ANGLE);
-        //drive backward and then left to initial position (for consistency)
-    }
-
-    // correct heading?
-
-}*/
-
-/*void Reset_Counts(){
-    right_encoder.ResetCounts();
-    left_encoder.ResetCounts();
-    front_encoder.ResetCounts();
-    return;
-}*/
-
-/*void Encoder_test(){
-    //Reset encoder counts
-    Reset_Counts();
-    
-    //Setting all motors to default forward
-    rightdrive.SetPercent(-25);
-    leftdrive.SetPercent(-25);
-    frontdrive.SetPercent(-25);
-
-    //Printing encoder counts every 0.1 seconds
-    while(true){
-        LCD.Clear();
-        LCD.Write("Front: "); LCD.Write(front_encoder.Counts());
-        LCD.Write("\nRight: "); LCD.Write(right_encoder.Counts());
-        LCD.Write("\nLeft: "); LCD.Write(left_encoder.Counts());
-
-        Sleep(0.1);
-    }
-}*/
-
 //Completes start button sensing
 void START_BUTTON(){
     while(CdS_cell.Value() > RED_LIGHT);
 
     LCD.WriteLine("START LIGHT DETECTED");
     Robot_Heading = 45;
-    DRIVE(0, -.5, 25);
+    DRIVE(0, -.4, 50);
 
-    DRIVE(0, 1.5, 25);
+    DRIVE(0, 1.5, 50);
 
     RotateDegrees(-72, 50);
 }
@@ -943,10 +719,10 @@ void APPLE_BASKET(){
 
     RCSFunctionRotate(&BOTTOM_RAMP_LOCATION, 50);
 
-    RCSFunctionDrive(&BOTTOM_RAMP_LOCATION, 25, 1.0);
+    RCSFunctionDrive(&BOTTOM_RAMP_LOCATION, 50, 1.0);
 
     //Drive up ramp
-    DriveFieldRelative(Robot_Heading, 0, 32, 50);
+    DriveFieldRelative(Robot_Heading, -4, 32, 65);
     DriveFieldRelative(Robot_Heading, -2, 0, 50);
 
     RCSFunctionRotate(&TOP_RAMP_LOCATION, 50);
@@ -968,13 +744,16 @@ void APPLE_BASKET(){
 void LEVER(){
     Sleep(0.5);
     
-    BIG_SERVO_ROTATE(110);
-    
-    DriveFieldRelative(Robot_Heading, -16.11, 8.67, 50);
+    DriveFieldRelative(Robot_Heading, -14.11, 6.67, 50);
 
     //Corrects location and heading
     RCSFunctionRotate(&LEVER_LOCATION, 50);
     RCSFunctionDrive(&LEVER_LOCATION, 50, 1.0);
+
+    RCSFunctionRotate(&LEVER_LOCATION, 25);
+    RCSFunctionDrive(&LEVER_LOCATION, 25, 1.0);
+
+    BIG_SERVO_ROTATE(110);
 
     //Reads lever information
     int CORRECT_LEVER = RCS.GetLever();
@@ -987,7 +766,7 @@ void LEVER(){
 
         //Moves to correct lever
         RCSFunctionRotate(&LEFT_LEVER_LOCATION, 50);
-        RCSFunctionDrive(&LEFT_LEVER_LOCATION, 25, 0.8);
+        RCSFunctionDrive(&LEFT_LEVER_LOCATION, 25, 0.7);
     }
 
     //Process for middle lever
@@ -998,7 +777,7 @@ void LEVER(){
 
         //Moves to correct lever
         RCSFunctionRotate(&MIDDLE_LEVER_LOCATION, 50);
-        RCSFunctionDrive(&MIDDLE_LEVER_LOCATION, 25, 0.9);
+        RCSFunctionDrive(&MIDDLE_LEVER_LOCATION, 25, 0.8);
     }
 
     //Process for right lever
@@ -1013,57 +792,50 @@ void LEVER(){
     }
 
     FLIP_LEVER();
+
+    
 }
 
 
 void HUMIDIFIER(){
-    //Correct heading
-    RCSFunctionRotate(&HUMIDIFIER_LOCATION, 50);
+    BIG_SERVO_ROTATE(70);
     
     //Drive to humidifier location from any lever
     RCSFunctionDrive(&HUMIDIFIER_LOCATION, 50, 1.0);
 
+    //Correct heading
+    RCSFunctionRotate(&HUMIDIFIER_LOCATION, 50);
+
     //Correct error
-    RCSFunctionDrive(&HUMIDIFIER_LOCATION, 25, 1.0);
+    RCSFunctionDrive(&HUMIDIFIER_LOCATION, 25,1.0);
+
+    //Correct error
+    RCSFunctionDrive(&HUMIDIFIER_LOCATION, 25, .85);
+
 
     //Reads CDS value for humidifer light
     HUMIDIFIER_LIGHT();
 }
 
-void ROBOT_CALIBRATION(){
-    //Initializes the RCS system
-    RCS.InitializeTouchMenu("1130D6KKR");
+void WINDOW(){
+    //Correct heading
+    RCSFunctionRotate(&WINDOW_LOCATION, 50);
 
-    //Set servo up degrees
-    BIG_SERVO_ROTATE(75);
-}
+    BIG_SERVO_ROTATE(110);
 
-//Flips lever down and up
-void FLIP_LEVER(){
-    //Flip lever down
-    BIG_SERVO_ROTATE(132);
+    RCSFunctionDrive(&WINDOW_LOCATION, 50, 1.0);
 
-    float startTime = TimeNow();
+    //Correct error
+    RCSFunctionDrive(&WINDOW_LOCATION, 25,1.0);
 
-    Sleep(1.0);
+    //Correct error
+    RCSFunctionDrive(&WINDOW_LOCATION, 25, .85);
 
-    BIG_SERVO_ROTATE(120);
+    RotateDegrees(-80, 65);
 
-    RotateDegrees(15, 50);
+    DriveFieldRelative(Robot_Heading, -.5, -.5, 50);
 
-    BIG_SERVO_ROTATE(135);
-
-    Sleep(.5);
-
-    RotateDegrees(-15, 50);
-
-    while(TimeNow() - startTime < 5.0){
-        Sleep(0.1);
-    }
-
-    BIG_SERVO_ROTATE(120);
-
-    DriveFieldRelative(Robot_Heading, 2, -2, 50);
+    RotateDegrees(150, 50);
 }
 
 
@@ -1090,4 +862,15 @@ void ERCMain()
     
     //Completes lever task
     LEVER();
+
+    //Completes humidifier task
+    HUMIDIFIER();
+
+    WINDOW();
+
+    while(1){
+        LCD.Clear();
+        LCD.Write(CdS_cell.Value());
+        Sleep(0.4);
+    }
 }
