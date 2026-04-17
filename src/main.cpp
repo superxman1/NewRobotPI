@@ -846,7 +846,7 @@ void WINDOW(){
     //Correct error
     RCSFunctionDrive(&WINDOW_LOCATION, 25, .85);
 
-    RotateDegrees(-80, 65);
+    RotateDegrees(-80, 40);
 
     DriveFieldRelative(Robot_Heading, -1, -1, 50);
 
@@ -858,6 +858,8 @@ void FinalButton(){
 
     DriveFieldRelative(Robot_Heading, 0, 3, 50);
     RotateDegrees(-100, 25);
+
+    BIG_SERVO_ROTATE(75);
 
     RCSFunctionRotate(&FINAL_Top_Ramp_LOCATION, 50);
 
