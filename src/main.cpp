@@ -671,6 +671,8 @@ void START_BUTTON(){
     Sleep(0.8);
 
     RotateDegrees(-72, 50);
+
+    Sleep(0.5);
 }
 
 //Completes compost task
@@ -876,7 +878,7 @@ void ERCMain()
 {
     int i = 135;
 
-
+    
     
     //RCS AND ROBOT CALIBRATION
     ROBOT_CALIBRATION();
