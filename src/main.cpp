@@ -861,6 +861,12 @@ void FinalButton(){
     RCSFunctionRotate(&FINAL_Button_LOCATION, 50);
 
     RCSFunctionDrive(&FINAL_Button_LOCATION, 70, 1.1);
+
+    DriveFieldRelative(Robot_Heading, 4, -4, 50);
+
+    RCSFunctionRotate(&FINAL_Button_LOCATION, 50);
+
+    RCSFunctionDrive(&FINAL_Button_LOCATION, 50, 1.1);
 }
 
 //Completes the compost mechanism task
