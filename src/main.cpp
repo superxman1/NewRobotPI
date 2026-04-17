@@ -89,7 +89,7 @@ void Stop(); */
 
 #define START_LIGHT 1.5
 #define RED_LIGHT 2.0
-#define BLUE_LIGHT_MIN 1.50
+#define BLUE_LIGHT_MIN 1.6
 #define BLUE_LIGHT_MAX 2.6
 
 
@@ -438,7 +438,8 @@ struct CourseCoordinates RIGHT_LEVER_LOCATION = {12, 15.87, 64.45};
 struct CourseCoordinates RED_LIGHT_LOCATION = {0, 9.18, 51.45};
 struct CourseCoordinates BLUE_LIGHT_LOCATION = {0, 9.22, 47.73};
 struct CourseCoordinates WINDOW_LOCATION = {145, 17.65, 44.98};
-struct CourseCoordinates FINAL_Top_Ramp_LOCATION = {321, 31.26, 52.87};
+struct CourseCoordinates FINAL_Top_Ramp_LOCATION = {57, 31.12, 49.78};
+struct CourseCoordinates FINAL_Button_LOCATION = {105, 31.00, 7.30};
 
 int RCSData() {
     Sleep(.5);
@@ -559,7 +560,7 @@ void RotateDegrees(float angleDeg, float speed){
         BACKMOTOR.SetPercent(direction * -currentSpeed);
         LEFTMOTOR.SetPercent(direction * -currentSpeed);
 
-        Sleep(0.005);
+        Sleep(0.01);
     }
 
     STOP();
@@ -630,13 +631,13 @@ void FLIP_LEVER(){
 
     BIG_SERVO_ROTATE(120);
 
-    RotateDegrees(60, 50);
+    RotateDegrees(40, 50);
 
-    BIG_SERVO_ROTATE(135);
+    BIG_SERVO.SetDegree(137);
 
     Sleep(.5);
 
-    RotateDegrees(-60, 50);
+    RotateDegrees(-40, 50);
 
 
     while(TimeNow() - startTime < 5.25){
@@ -667,7 +668,7 @@ void START_BUTTON(){
 
     DRIVE(0, 1.5, 50);
 
-    Sleep(0.2);
+    Sleep(0.8);
 
     RotateDegrees(-72, 50);
 }
@@ -705,7 +706,7 @@ void APPLE_BASKET(){
 
     RCSFunctionRotate(&APPLE_LOCATION, 50);
 
-    BIG_SERVO_ROTATE(115);
+    BIG_SERVO_ROTATE(112);
 
     RCSFunctionDrive(&APPLE_LOCATION, 50, 0.9);
 
@@ -769,7 +770,7 @@ void LEVER(){
 
         //Moves to correct lever
         RCSFunctionRotate(&LEFT_LEVER_LOCATION, 50);
-        RCSFunctionDrive(&LEFT_LEVER_LOCATION, 25, 0.7);
+        RCSFunctionDrive(&LEFT_LEVER_LOCATION, 25, 0.82);
     }
 
     //Process for middle lever
@@ -780,7 +781,7 @@ void LEVER(){
 
         //Moves to correct lever
         RCSFunctionRotate(&MIDDLE_LEVER_LOCATION, 50);
-        RCSFunctionDrive(&MIDDLE_LEVER_LOCATION, 25, 0.8);
+        RCSFunctionDrive(&MIDDLE_LEVER_LOCATION, 25, 0.92);
     }
 
     //Process for right lever
@@ -791,7 +792,7 @@ void LEVER(){
 
         //Moves to correct lever
         RCSFunctionRotate(&RIGHT_LEVER_LOCATION, 50);
-        RCSFunctionDrive(&RIGHT_LEVER_LOCATION, 25, 0.8);
+        RCSFunctionDrive(&RIGHT_LEVER_LOCATION, 25, 0.92);
     }
 
     FLIP_LEVER();
@@ -817,7 +818,10 @@ void HUMIDIFIER(){
 
 
     //Reads CDS value for humidifer light
-    HUMIDIFIER_LIGHT();
+    if(HUMIDIFIER_LIGHT() == 2){
+        RCSFunctionDrive(&HUMIDIFIER_LOCATION, 25, .85);
+        HUMIDIFIER_LIGHT();
+    }
 }
 
 void WINDOW(){
@@ -839,17 +843,24 @@ void WINDOW(){
 
     RotateDegrees(-80, 65);
 
-    DriveFieldRelative(Robot_Heading, -.5, -.5, 50);
+    DriveFieldRelative(Robot_Heading, -1, -1, 50);
 
     RotateDegrees(150, 50);
 }
 
 void FinalButton(){
-    RotateDegrees(-100, 50);
+    RCSData();
 
-    RCSFunctionDrive(&FINAL_Top_Ramp_LOCATION, 75, 1.0);
+    DriveFieldRelative(Robot_Heading, 0, 3, 50);
+    RotateDegrees(-100, 25);
 
-    DriveFieldRelative(Robot_Heading, 0, -50, 75);
+    RCSFunctionRotate(&FINAL_Top_Ramp_LOCATION, 50);
+
+    RCSFunctionDrive(&FINAL_Top_Ramp_LOCATION, 50, .8);
+
+    RCSFunctionRotate(&FINAL_Button_LOCATION, 50);
+
+    RCSFunctionDrive(&FINAL_Button_LOCATION, 70, 1.1);
 }
 
 //Completes the compost mechanism task
@@ -859,6 +870,8 @@ void ERCMain()
 {
     int i = 135;
 
+
+    
     //RCS AND ROBOT CALIBRATION
     ROBOT_CALIBRATION();
     WaitForFinalAction();
@@ -882,4 +895,5 @@ void ERCMain()
     WINDOW();
 
     FinalButton();
+    
 }
