@@ -541,8 +541,11 @@ void RotateDegrees(float angleDeg, float speed){
 
         float avgCounts = (c1 + c2 + c3) / 3.0f;
         float remaining = targetCounts - avgCounts;
+        float remaining1 = targetCounts - c1;
+        float remaining2 = targetCounts - c2;
+        float remaining3 = targetCounts - c3;
 
-        if (remaining <= 0)
+        if (remaining1 <= 0 || remaining2 <= 0 || remaining3 <= 0)
             break;
 
         // Slow down near the target to reduce overshoot
@@ -858,11 +861,13 @@ void FinalButton(){
 
     RCSFunctionRotate(&FINAL_Top_Ramp_LOCATION, 50);
 
-    RCSFunctionDrive(&FINAL_Top_Ramp_LOCATION, 50, .8);
+    RCSFunctionDrive(&FINAL_Top_Ramp_LOCATION, 40, .75);
+
+    DriveFieldRelative(Robot_Heading, -2, 0, 25);
 
     RCSFunctionRotate(&FINAL_Button_LOCATION, 50);
 
-    RCSFunctionDrive(&FINAL_Button_LOCATION, 70, 1.1);
+    RCSFunctionDrive(&FINAL_Button_LOCATION, 50, 1.1);
 
     DriveFieldRelative(Robot_Heading, 4, -4, 50);
 
