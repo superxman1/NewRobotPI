@@ -671,11 +671,7 @@ void START_BUTTON(){
 
     DRIVE(0, 1.5, 50);
 
-    Sleep(0.8);
-
     RotateDegrees(-72, 50);
-
-    Sleep(0.5);
 }
 
 //Completes compost task
@@ -683,7 +679,7 @@ void COMPOST(){
 
     //Drive to Compost Bin
     DRIVE(-SQRT32 * 6, -6/2, 50);
-    DRIVE(4.5/2, -SQRT32 * 4.5, 50);
+    DRIVE(5/2, -SQRT32 * 5, 50);
     DRIVE(-SQRT32 * 3.5, -3.5/2, 50);
     RotateDegrees(5, 25);
  
