@@ -433,12 +433,14 @@ struct CourseCoordinates BOTTOM_RAMP_LOCATION = {330, 32.10, 16.18};
 struct CourseCoordinates TOP_RAMP_LOCATION = {321, 33.26, 54.87};
 struct CourseCoordinates LEVER_LOCATION = {10, 17.15, 58.64};
 struct CourseCoordinates LEFT_LEVER_LOCATION = {8, 9.18, 56.46};
-struct CourseCoordinates MIDDLE_LEVER_LOCATION = {12, 12.10, 61.08};
+struct CourseCoordinates MIDDLE_LEVER_LOCATION = {12, 13.10, 60.08};
 struct CourseCoordinates RIGHT_LEVER_LOCATION = {12, 15.87, 64.45};
 struct CourseCoordinates RED_LIGHT_LOCATION = {0, 9.18, 51.45};
 struct CourseCoordinates BLUE_LIGHT_LOCATION = {0, 9.22, 47.73};
 struct CourseCoordinates WINDOW_LOCATION = {145, 17.65, 44.98};
-struct CourseCoordinates FINAL_Top_Ramp_LOCATION = {57, 31.12, 49.78};
+struct CourseCoordinates FINAL_Top_Ramp_LOCATION = {330, 31.12, 49.78};
+struct CourseCoordinates Window_PRE_Close = {150, 10.21, 44.92};
+struct CourseCoordinates Window_POST_Close = {150, 11.3, 44.9};
 struct CourseCoordinates FINAL_Button_LOCATION = {105, 31.00, 7.30};
 
 int RCSData() {
@@ -642,6 +644,7 @@ void FLIP_LEVER(){
 
     RotateDegrees(-40, 50);
 
+    DriveFieldRelative(Robot_Heading, -.5, .5, 50);
 
     while(TimeNow() - startTime < 5.25){
         Sleep(0.01);
@@ -685,9 +688,9 @@ void COMPOST(){
  
     //Rotate continuous servo both directions
     CONTINUOUS_SERVO.SetDegree(105);
-    Sleep(1.4);
+    Sleep(1.3);
     CONTINUOUS_SERVO.SetDegree(65);
-    Sleep(1.4);
+    Sleep(1.3);
     CONTINUOUS_SERVO.Off();
 
     //Back away
@@ -701,9 +704,7 @@ void APPLE_BASKET(){
     //Drives from humidifier to apple basket
     RotateDegrees(117, 50);
     
-    Sleep(0.1);
-    
-    DriveFieldRelative(Robot_Heading, -6.7, 15.25, 65);
+    DriveFieldRelative(Robot_Heading, -6.7, 15.25, 75);
 
     RCSFunctionRotate(&APPLE_LOCATION, 50);
 
@@ -720,21 +721,20 @@ void APPLE_BASKET(){
 
     Sleep(0.25);
 
-    DriveFieldRelative(Robot_Heading, 17.41, -6.79, 65);
+    DriveFieldRelative(Robot_Heading, 17.41, -6.79, 75);
 
     RCSFunctionRotate(&BOTTOM_RAMP_LOCATION, 50);
 
     RCSFunctionDrive(&BOTTOM_RAMP_LOCATION, 50, 1.0);
 
     //Drive up ramp
-    DriveFieldRelative(Robot_Heading, -4, 32, 65);
-    DriveFieldRelative(Robot_Heading, -2, 0, 50);
+    DriveFieldRelative(Robot_Heading, -4, 32, 50);
 
     RCSFunctionRotate(&TOP_RAMP_LOCATION, 50);
 
-    RCSFunctionDrive(&TOP_RAMP_LOCATION, 50, 1.0);
+    RCSFunctionDrive(&TOP_RAMP_LOCATION, 75, 1.0);
 
-    DriveFieldRelative(Robot_Heading, 0, 3, 50);
+    DriveFieldRelative(Robot_Heading, 0, 3, 75);
 
     BIG_SERVO_ROTATE(80);
 
@@ -742,23 +742,21 @@ void APPLE_BASKET(){
 
     BIG_SERVO.Off();
 
-    DriveFieldRelative(Robot_Heading, 0, -5, 50);
+    DriveFieldRelative(Robot_Heading, 0, -5, 75);
 }
 
 //Completes the Fertilizer Lever Task
 void LEVER(){
-    Sleep(0.5);
+    //Sleep(0.5);
     
-    DriveFieldRelative(Robot_Heading, -14.11, 6.67, 50);
+    DriveFieldRelative(Robot_Heading, -14.11, 6.67, 75);
 
     //Corrects location and heading
     RCSFunctionRotate(&LEVER_LOCATION, 50);
-    RCSFunctionDrive(&LEVER_LOCATION, 50, 1.0);
+    RCSFunctionDrive(&LEVER_LOCATION, 50, .9);
 
-    RCSFunctionRotate(&LEVER_LOCATION, 25);
-    RCSFunctionDrive(&LEVER_LOCATION, 25, 1.0);
 
-    BIG_SERVO_ROTATE(110);
+    BIG_SERVO_ROTATE(100);
 
     //Reads lever information
     int CORRECT_LEVER = RCS.GetLever();
@@ -782,7 +780,7 @@ void LEVER(){
 
         //Moves to correct lever
         RCSFunctionRotate(&MIDDLE_LEVER_LOCATION, 50);
-        RCSFunctionDrive(&MIDDLE_LEVER_LOCATION, 25, 0.92);
+        RCSFunctionDrive(&MIDDLE_LEVER_LOCATION, 25, 0.85);
     }
 
     //Process for right lever
@@ -826,6 +824,7 @@ void HUMIDIFIER(){
 }
 
 void WINDOW(){
+     
     //Back away from the humidifier
     DriveFieldRelative(Robot_Heading, 4, 0, 50);
 
@@ -842,30 +841,36 @@ void WINDOW(){
     //Correct error
     RCSFunctionDrive(&WINDOW_LOCATION, 25, .85);
 
-    RotateDegrees(-80, 40);
+    RotateDegrees(-40, 65);
 
-    DriveFieldRelative(Robot_Heading, -1, -1, 50);
+    RCSFunctionRotate(&Window_PRE_Close, 50);
 
-    RotateDegrees(150, 50);
+    RCSFunctionDrive(&Window_PRE_Close, 50, 1.0);
+
+    BIG_SERVO_ROTATE(70);
+
+    Sleep(0.25);
+
+    RCSFunctionDrive(&Window_POST_Close, 50, 1.0);
+
+    RotateDegrees(100, 50);
 }
+
 
 void FinalButton(){
     RCSData();
-
-    DriveFieldRelative(Robot_Heading, 0, 3, 50);
-    RotateDegrees(-100, 25);
 
     BIG_SERVO_ROTATE(75);
 
     RCSFunctionRotate(&FINAL_Top_Ramp_LOCATION, 50);
 
-    RCSFunctionDrive(&FINAL_Top_Ramp_LOCATION, 40, .75);
+    RCSFunctionDrive(&FINAL_Top_Ramp_LOCATION, 40, .9);
 
     DriveFieldRelative(Robot_Heading, -2, 0, 25);
 
     RCSFunctionRotate(&FINAL_Button_LOCATION, 50);
 
-    RCSFunctionDrive(&FINAL_Button_LOCATION, 50, 1.1);
+    RCSFunctionDrive(&FINAL_Button_LOCATION, 75, 1);
 
     DriveFieldRelative(Robot_Heading, 4, -4, 50);
 
