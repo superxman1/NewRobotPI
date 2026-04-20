@@ -441,7 +441,7 @@ struct CourseCoordinates WINDOW_LOCATION = {145, 17.65, 44.98};
 struct CourseCoordinates FINAL_Top_Ramp_LOCATION = {330, 31.12, 49.78};
 struct CourseCoordinates Window_PRE_Close = {150, 10.21, 44.92};
 struct CourseCoordinates Window_POST_Close = {150, 11.3, 44.9};
-struct CourseCoordinates FINAL_Button_LOCATION = {105, 31.00, 7.30};
+struct CourseCoordinates FINAL_Button_LOCATION = {105, 30.50, 7.30};
 
 int RCSData() {
     Sleep(.5);
@@ -634,15 +634,18 @@ void FLIP_LEVER(){
 
     Sleep(1.0);
 
-    BIG_SERVO_ROTATE(120);
+    BIG_SERVO_ROTATE(110);
 
-    RotateDegrees(40, 50);
+    Sleep(0.5);
+
+    RotateDegrees(50, 50);
 
     BIG_SERVO.SetDegree(137);
 
     Sleep(.5);
 
-    RotateDegrees(-40, 50);
+
+    RotateDegrees(-50, 50);
 
     DriveFieldRelative(Robot_Heading, -.5, .5, 50);
 
@@ -728,7 +731,7 @@ void APPLE_BASKET(){
     RCSFunctionDrive(&BOTTOM_RAMP_LOCATION, 50, 1.0);
 
     //Drive up ramp
-    DriveFieldRelative(Robot_Heading, -4, 32, 50);
+    DriveFieldRelative(Robot_Heading, -4, 32, 65);
 
     RCSFunctionRotate(&TOP_RAMP_LOCATION, 50);
 
@@ -836,29 +839,28 @@ void WINDOW(){
     RCSFunctionDrive(&WINDOW_LOCATION, 50, 1.0);
 
     //Correct error
-    RCSFunctionDrive(&WINDOW_LOCATION, 25,1.0);
+    RCSFunctionDrive(&WINDOW_LOCATION, 25,.85);
 
     //Correct error
-    RCSFunctionDrive(&WINDOW_LOCATION, 25, .85);
+    //RCSFunctionDrive(&WINDOW_LOCATION, 25, .85);
 
-    RotateDegrees(-40, 65);
+    RotateDegrees(-50, 65);
 
     RCSFunctionRotate(&Window_PRE_Close, 50);
 
     RCSFunctionDrive(&Window_PRE_Close, 50, 1.0);
 
-    BIG_SERVO_ROTATE(70);
-
-    Sleep(0.25);
-
     RCSFunctionDrive(&Window_POST_Close, 50, 1.0);
 
-    RotateDegrees(100, 50);
+    RotateDegrees(100, 65);
+
+    RCSFunctionRotate(&Window_POST_Close, 50);
+
+    DriveFieldRelative(Robot_Heading, 0, 6, 50);
 }
 
 
 void FinalButton(){
-    RCSData();
 
     BIG_SERVO_ROTATE(75);
 
@@ -867,8 +869,6 @@ void FinalButton(){
     RCSFunctionDrive(&FINAL_Top_Ramp_LOCATION, 40, .9);
 
     DriveFieldRelative(Robot_Heading, -2, 0, 25);
-
-    RCSFunctionRotate(&FINAL_Button_LOCATION, 50);
 
     RCSFunctionDrive(&FINAL_Button_LOCATION, 75, 1);
 
