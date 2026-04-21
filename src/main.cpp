@@ -432,16 +432,16 @@ struct CourseCoordinates APPLE_LOCATION = {57, 10.69, 19.97};
 struct CourseCoordinates BOTTOM_RAMP_LOCATION = {330, 32.10, 16.18};
 struct CourseCoordinates TOP_RAMP_LOCATION = {321, 33.26, 54.87};
 struct CourseCoordinates LEVER_LOCATION = {10, 17.15, 58.64};
-struct CourseCoordinates LEFT_LEVER_LOCATION = {8, 9.18, 56.46};
+struct CourseCoordinates LEFT_LEVER_LOCATION = {16, 8.89, 57.17};
 struct CourseCoordinates MIDDLE_LEVER_LOCATION = {12, 13.10, 60.08};
 struct CourseCoordinates RIGHT_LEVER_LOCATION = {12, 15.87, 64.45};
 struct CourseCoordinates RED_LIGHT_LOCATION = {0, 9.18, 51.45};
 struct CourseCoordinates BLUE_LIGHT_LOCATION = {0, 9.22, 47.73};
 struct CourseCoordinates WINDOW_LOCATION = {145, 17.65, 44.98};
 struct CourseCoordinates FINAL_Top_Ramp_LOCATION = {330, 31.12, 49.78};
-struct CourseCoordinates Window_PRE_Close = {150, 10.21, 44.92};
-struct CourseCoordinates Window_POST_Close = {150, 11.3, 44.9};
-struct CourseCoordinates FINAL_Button_LOCATION = {105, 30.50, 7.30};
+struct CourseCoordinates Window_PRE_Close = {150, 10.21, 45.42};
+struct CourseCoordinates Window_POST_Close = {150, 11.3, 45.4};
+struct CourseCoordinates FINAL_Button_LOCATION = {105, 29.50, 7.30};
 
 int RCSData() {
     Sleep(.5);
@@ -634,7 +634,7 @@ void FLIP_LEVER(){
 
     Sleep(1.0);
 
-    BIG_SERVO_ROTATE(110);
+    BIG_SERVO_ROTATE(121);
 
     Sleep(0.5);
 
@@ -839,7 +839,7 @@ void WINDOW(){
     RCSFunctionDrive(&WINDOW_LOCATION, 50, 1.0);
 
     //Correct error
-    RCSFunctionDrive(&WINDOW_LOCATION, 25,.85);
+    RCSFunctionDrive(&WINDOW_LOCATION, 25,.80);
 
     //Correct error
     //RCSFunctionDrive(&WINDOW_LOCATION, 25, .85);
@@ -848,15 +848,15 @@ void WINDOW(){
 
     RCSFunctionRotate(&Window_PRE_Close, 50);
 
-    RCSFunctionDrive(&Window_PRE_Close, 50, 1.0);
+    RCSFunctionDrive(&Window_PRE_Close, 75, 1.0);
 
-    RCSFunctionDrive(&Window_POST_Close, 50, 1.0);
+    RCSFunctionDrive(&Window_POST_Close, 75, 1.0);
 
-    RotateDegrees(100, 65);
+    //RotateDegrees(40, 65);
 
     RCSFunctionRotate(&Window_POST_Close, 50);
 
-    DriveFieldRelative(Robot_Heading, 0, 6, 50);
+    DriveFieldRelative(Robot_Heading, 6, 0, 50);
 }
 
 
@@ -871,6 +871,8 @@ void FinalButton(){
     DriveFieldRelative(Robot_Heading, -2, 0, 25);
 
     RCSFunctionDrive(&FINAL_Button_LOCATION, 75, 1);
+
+    RotateDegrees(60, 75);
 
     DriveFieldRelative(Robot_Heading, 4, -4, 50);
 
