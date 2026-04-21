@@ -439,9 +439,11 @@ struct CourseCoordinates RED_LIGHT_LOCATION = {0, 9.18, 51.45};
 struct CourseCoordinates BLUE_LIGHT_LOCATION = {0, 9.22, 47.73};
 struct CourseCoordinates WINDOW_LOCATION = {145, 17.65, 44.98};
 struct CourseCoordinates FINAL_Top_Ramp_LOCATION = {330, 31.12, 49.78};
-struct CourseCoordinates Window_PRE_Close = {150, 10.21, 45.42};
+struct CourseCoordinates Window_PRE_Close = {150, 10.21, 44.42};
 struct CourseCoordinates Window_POST_Close = {150, 11.3, 45.4};
 struct CourseCoordinates FINAL_Button_LOCATION = {105, 29.50, 7.30};
+
+
 
 int RCSData() {
     Sleep(.5);
@@ -582,8 +584,8 @@ int HUMIDIFIER_LIGHT(){
         LCD.WriteLine("RED LIGHT DETECTED");
         LCD.WriteLine(CdS_cell.Value());
 
-        RCSFunctionDrive(&RED_LIGHT_LOCATION, 50, 1.0);
-
+        DriveFieldRelative(Robot_Heading, -4.77, 1.58, 50);
+        
         return 0; //Red
     }
         else if(CdS_cell.Value() > BLUE_LIGHT_MIN && CdS_cell.Value() < BLUE_LIGHT_MAX){
@@ -591,7 +593,7 @@ int HUMIDIFIER_LIGHT(){
         LCD.WriteLine("BLUE LIGHT DETECTED");
         LCD.WriteLine(CdS_cell.Value());
         
-        RCSFunctionDrive(&BLUE_LIGHT_LOCATION, 50, 1.0);
+        DriveFieldRelative(Robot_Heading, -4.73, -2.14, 50);
 
         return 1; //Blue
     }
@@ -850,6 +852,12 @@ void WINDOW(){
 
     RCSFunctionDrive(&Window_PRE_Close, 75, 1.0);
 
+    BIG_SERVO_ROTATE(70);
+
+    Sleep(0.2);
+
+    BIG_SERVO_ROTATE(110);
+
     RCSFunctionDrive(&Window_POST_Close, 75, 1.0);
 
     //RotateDegrees(40, 65);
@@ -857,6 +865,10 @@ void WINDOW(){
     RCSFunctionRotate(&Window_POST_Close, 50);
 
     DriveFieldRelative(Robot_Heading, 6, 0, 50);
+    
+    RotateDegrees(30, 50);
+
+    RotateDegrees(-10, 50);
 }
 
 
@@ -872,9 +884,8 @@ void FinalButton(){
 
     RCSFunctionDrive(&FINAL_Button_LOCATION, 75, 1);
 
-    RotateDegrees(60, 75);
-
-    DriveFieldRelative(Robot_Heading, 4, -4, 50);
+    //Failsafe
+    DriveFieldRelative(Robot_Heading, -4, 4, 50);
 
     RCSFunctionRotate(&FINAL_Button_LOCATION, 50);
 
