@@ -832,7 +832,7 @@ void LEVER(){
 
         //Moves to correct lever
         RCSFunctionRotate(&LEFT_LEVER_LOCATION, 75);
-        RCSFunctionDrive(&LEFT_LEVER_LOCATION, 25, 0.82);
+        RCSFunctionDrive(&LEFT_LEVER_LOCATION, 45, 0.82);
         FLIP_LEVER();
     }
 
@@ -844,7 +844,7 @@ void LEVER(){
 
         //Moves to correct lever
         RCSFunctionRotate(&MIDDLE_LEVER_LOCATION, 75);
-        RCSFunctionDrive(&MIDDLE_LEVER_LOCATION, 25, 0.85);
+        RCSFunctionDrive(&MIDDLE_LEVER_LOCATION, 45, 0.85);
         FLIP_LEVER();
     }
 
@@ -856,7 +856,7 @@ void LEVER(){
 
         //Moves to correct lever
         RCSFunctionRotate(&RIGHT_LEVER_LOCATION, 75);
-        RCSFunctionDrive(&RIGHT_LEVER_LOCATION, 25, 0.92);
+        RCSFunctionDrive(&RIGHT_LEVER_LOCATION, 45, 0.92);
         FLIP_LEVER();
     }
 
