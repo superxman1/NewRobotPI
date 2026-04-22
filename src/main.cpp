@@ -89,7 +89,7 @@ void Stop(); */
 
 #define START_LIGHT 1.5
 #define RED_LIGHT 2.0
-#define BLUE_LIGHT_MIN 1.6
+#define BLUE_LIGHT_MIN 1.55
 #define BLUE_LIGHT_MAX 2.6
 
 
@@ -409,7 +409,8 @@ void DRIVE(float x, float y, int POWER){
     //Get rid of this once encoders work
     STOP();
 
-    ENCODER_PRINT_MANUAL();
+    Sleep(0.1);
+   // ENCODER_PRINT_MANUAL();
 }
 
 //Define a global variable to keep track of heading (in degrees, CCW positive)
@@ -649,7 +650,7 @@ void FLIP_LEVER(){
 
     RotateDegrees(-50, 50);
 
-    DriveFieldRelative(Robot_Heading, -.5, .5, 50);
+    DriveFieldRelative(Robot_Heading, -1, 1, 65);
 
     while(TimeNow() - startTime < 5.25){
         Sleep(0.01);
@@ -687,9 +688,10 @@ void COMPOST(){
 
     //Drive to Compost Bin
     DRIVE(-SQRT32 * 6, -6/2, 50);
-    DRIVE(5/2, -SQRT32 * 5, 50);
+    DRIVE(5.5/2, -SQRT32 * 5.5, 50);
+    RotateDegrees(10, 25);
     DRIVE(-SQRT32 * 3.5, -3.5/2, 50);
-    RotateDegrees(5, 25);
+    
  
     //Rotate continuous servo both directions
     CONTINUOUS_SERVO.SetDegree(105);
@@ -718,7 +720,9 @@ void APPLE_BASKET(){
     RCSFunctionDrive(&APPLE_LOCATION, 50, 0.9);
 
     //Correct error
-    RCSFunctionDrive(&APPLE_LOCATION, 25, 1.0);
+    //RCSFunctionDrive(&APPLE_LOCATION, 25, 1.0);
+
+    Sleep(0.1);
 
     DriveFieldRelative(Robot_Heading, -1, 0, 50);
 
@@ -820,10 +824,11 @@ void HUMIDIFIER(){
     //Correct error
     RCSFunctionDrive(&HUMIDIFIER_LOCATION, 25, .85);
 
+    Sleep(0.4);
 
     //Reads CDS value for humidifer light
     if(HUMIDIFIER_LIGHT() == 2){
-        RCSFunctionDrive(&HUMIDIFIER_LOCATION, 25, .85);
+        RCSFunctionDrive(&HUMIDIFIER_LOCATION, 25, .80);
         HUMIDIFIER_LIGHT();
     }
 }
@@ -836,15 +841,17 @@ void WINDOW(){
     //Correct heading
     RCSFunctionRotate(&WINDOW_LOCATION, 50);
 
-    BIG_SERVO_ROTATE(110);
+    BIG_SERVO_ROTATE(90);
 
     RCSFunctionDrive(&WINDOW_LOCATION, 50, 1.0);
+
+    BIG_SERVO_ROTATE(110);
 
     //Correct error
     RCSFunctionDrive(&WINDOW_LOCATION, 25,.80);
 
     //Correct error
-    //RCSFunctionDrive(&WINDOW_LOCATION, 25, .85);
+    RCSFunctionDrive(&WINDOW_LOCATION, 25, .75);
 
     RotateDegrees(-50, 65);
 
@@ -852,9 +859,13 @@ void WINDOW(){
 
     RCSFunctionDrive(&Window_PRE_Close, 75, 1.0);
 
+    Sleep(0.2);
+
     BIG_SERVO_ROTATE(70);
 
     Sleep(0.2);
+
+    DriveFieldRelative(Robot_Heading, -1, 0, 50);
 
     BIG_SERVO_ROTATE(110);
 
@@ -864,11 +875,19 @@ void WINDOW(){
 
     RCSFunctionRotate(&Window_POST_Close, 50);
 
-    DriveFieldRelative(Robot_Heading, 6, 0, 50);
+    DriveFieldRelative(Robot_Heading, 7, 0, 65);
     
-    RotateDegrees(30, 50);
+    BIG_SERVO_ROTATE(70);
 
-    RotateDegrees(-10, 50);
+    RCSData();
+
+    DriveFieldRelative(Robot_Heading, -2, 0, 50);
+
+    BIG_SERVO_ROTATE(110);
+
+    DriveFieldRelative(Robot_Heading, 4, 0, 50);
+
+    DriveFieldRelative(Robot_Heading, -2, 2, 50);
 }
 
 
@@ -887,9 +906,9 @@ void FinalButton(){
     //Failsafe
     DriveFieldRelative(Robot_Heading, -4, 4, 50);
 
-    RCSFunctionRotate(&FINAL_Button_LOCATION, 50);
+    RCSFunctionRotate(&FINAL_Top_Ramp_LOCATION, 50);
 
-    RCSFunctionDrive(&FINAL_Button_LOCATION, 50, 1.1);
+    RCSFunctionDrive(&FINAL_Button_LOCATION, 75, 1.5);
 }
 
 //Completes the compost mechanism task
