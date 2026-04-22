@@ -447,15 +447,31 @@ struct CourseCoordinates FINAL_Button_LOCATION = {105, 29.50, 7.30};
 
 
 int RCSData() {
-    Sleep(.5);
+    Sleep(0.5);
+
+    // FIRST ATTEMPT
     RCSPose* pose = RCS.RequestPosition();
+
+    // If first attempt fails → retry ONCE
     if (pose == nullptr || (pose->x < 0 && pose->y < 0 && pose->heading < 0)) {
-        LCD.WriteLine("No RCS data received.");
+        LCD.WriteLine("RCS failed, retrying...");
+
+        Sleep(0.5); // small delay before retry
+
+        pose = RCS.RequestPosition(); // SECOND ATTEMPT
+    }
+
+    // FINAL CHECK (after max 2 attempts total)
+    if (pose == nullptr || (pose->x < 0 && pose->y < 0 && pose->heading < 0)) {
+        LCD.WriteLine("RCS failed twice.");
         return 0;
     }
+
+    // SUCCESS
     Robot_Heading = pose->heading;
     X_POS = pose->x;
     Y_POS = pose->y;
+
     return 1;
 }
 
