@@ -434,13 +434,13 @@ struct CourseCoordinates BOTTOM_RAMP_LOCATION = {330, 32.10, 16.18};
 struct CourseCoordinates TOP_RAMP_LOCATION = {321, 33.26, 54.87};
 struct CourseCoordinates LEVER_LOCATION = {10, 17.15, 58.64};
 struct CourseCoordinates LEFT_LEVER_LOCATION = {16, 8.89, 57.17};
-struct CourseCoordinates MIDDLE_LEVER_LOCATION = {12, 13.10, 60.08};
+struct CourseCoordinates MIDDLE_LEVER_LOCATION = {12, 13.60, 60.58};
 struct CourseCoordinates RIGHT_LEVER_LOCATION = {12, 15.87, 64.45};
 struct CourseCoordinates RED_LIGHT_LOCATION = {0, 9.18, 51.45};
 struct CourseCoordinates BLUE_LIGHT_LOCATION = {0, 9.22, 47.73};
 struct CourseCoordinates WINDOW_LOCATION = {145, 17.65, 44.98};
 struct CourseCoordinates FINAL_Top_Ramp_LOCATION = {330, 31.12, 49.78};
-struct CourseCoordinates Window_PRE_Close = {150, 10.21, 44.2};
+struct CourseCoordinates Window_PRE_Close = {145, 10.21, 44.2};
 struct CourseCoordinates Window_POST_Close = {150, 11.3, 45.4};
 struct CourseCoordinates FINAL_Button_LOCATION = {105, 29.50, 7.30};
 struct CourseCoordinates Final_Final_Button_Location = {15, 28.50, 6.30};
@@ -832,7 +832,7 @@ void LEVER(){
 
         //Moves to correct lever
         RCSFunctionRotate(&LEFT_LEVER_LOCATION, 75);
-        RCSFunctionDrive(&LEFT_LEVER_LOCATION, 45, 0.82);
+        RCSFunctionDrive(&LEFT_LEVER_LOCATION, 25, 0.82);
         FLIP_LEVER();
     }
 
@@ -844,7 +844,7 @@ void LEVER(){
 
         //Moves to correct lever
         RCSFunctionRotate(&MIDDLE_LEVER_LOCATION, 75);
-        RCSFunctionDrive(&MIDDLE_LEVER_LOCATION, 45, 0.85);
+        RCSFunctionDrive(&MIDDLE_LEVER_LOCATION, 25, 0.85);
         FLIP_LEVER();
     }
 
@@ -856,7 +856,7 @@ void LEVER(){
 
         //Moves to correct lever
         RCSFunctionRotate(&RIGHT_LEVER_LOCATION, 75);
-        RCSFunctionDrive(&RIGHT_LEVER_LOCATION, 45, 0.92);
+        RCSFunctionDrive(&RIGHT_LEVER_LOCATION, 25, 0.87);
         FLIP_LEVER();
     }
 
@@ -978,6 +978,8 @@ void FinalButton(){
 void ERCMain()
 {
     int i = 135;
+
+    
     
     //RCS AND ROBOT CALIBRATION
     ROBOT_CALIBRATION();
@@ -1002,5 +1004,11 @@ void ERCMain()
     WINDOW();
 
     FinalButton();
+
+    while(1){
+        LCD.WriteLine(CdS_cell.Value());
+        Sleep(0.3);
+         LCD.Clear();
+    }
     
 }
