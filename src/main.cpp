@@ -89,7 +89,7 @@ void Stop(); */
 
 #define START_LIGHT 1.5
 #define RED_LIGHT 2.0
-#define BLUE_LIGHT_MIN 1.55
+#define BLUE_LIGHT_MIN 1.4
 #define BLUE_LIGHT_MAX 2.6
 
 
@@ -440,9 +440,10 @@ struct CourseCoordinates RED_LIGHT_LOCATION = {0, 9.18, 51.45};
 struct CourseCoordinates BLUE_LIGHT_LOCATION = {0, 9.22, 47.73};
 struct CourseCoordinates WINDOW_LOCATION = {145, 17.65, 44.98};
 struct CourseCoordinates FINAL_Top_Ramp_LOCATION = {330, 31.12, 49.78};
-struct CourseCoordinates Window_PRE_Close = {150, 10.21, 44.42};
+struct CourseCoordinates Window_PRE_Close = {150, 10.21, 44.2};
 struct CourseCoordinates Window_POST_Close = {150, 11.3, 45.4};
 struct CourseCoordinates FINAL_Button_LOCATION = {105, 29.50, 7.30};
+struct CourseCoordinates Final_Final_Button_Location = {15, 28.50, 6.30};
 
 
 
@@ -657,14 +658,49 @@ void FLIP_LEVER(){
 
     Sleep(0.5);
 
-    RotateDegrees(50, 50);
+    RotateDegrees(50, 75);
 
-    BIG_SERVO.SetDegree(137);
+    BIG_SERVO.SetDegree(140);
 
     Sleep(.5);
 
 
-    RotateDegrees(-50, 50);
+    RotateDegrees(-50, 25);
+
+    DriveFieldRelative(Robot_Heading, -.5, .5, 65);
+
+    while(TimeNow() - startTime < 5.25){
+        Sleep(0.01);
+    }
+
+    BIG_SERVO_ROTATE(120);
+
+    Sleep(0.1);
+
+    DriveFieldRelative(Robot_Heading, 2, -4, 50);
+}
+
+//Flips lever down and up
+void FLIP_LEVERC(){
+    //Flip lever down
+    BIG_SERVO_ROTATE(132);
+
+    float startTime = TimeNow();
+
+    Sleep(1.0);
+
+    BIG_SERVO_ROTATE(121);
+
+    Sleep(0.5);
+
+    RotateDegrees(-50, 75);
+
+    BIG_SERVO.SetDegree(140);
+
+    Sleep(.5);
+
+
+    RotateDegrees(50, 75);
 
     DriveFieldRelative(Robot_Heading, -1, 1, 65);
 
@@ -696,7 +732,7 @@ void START_BUTTON(){
 
     DRIVE(0, 1.5, 50);
 
-    RotateDegrees(-72, 50);
+    RotateDegrees(-72, 75);
 }
 
 //Completes compost task
@@ -705,8 +741,8 @@ void COMPOST(){
     //Drive to Compost Bin
     DRIVE(-SQRT32 * 6, -6/2, 50);
     DRIVE(5.5/2, -SQRT32 * 5.5, 50);
-    RotateDegrees(10, 25);
-    DRIVE(-SQRT32 * 3.5, -3.5/2, 50);
+    RotateDegrees(10, 75);
+    DRIVE(-SQRT32 * 4, -4/2, 50);
     
  
     //Rotate continuous servo both directions
@@ -725,37 +761,37 @@ void COMPOST(){
 //Completes the Apple Basket Task
 void APPLE_BASKET(){
     //Drives from humidifier to apple basket
-    RotateDegrees(117, 50);
+    RotateDegrees(117, 75);
     
-    DriveFieldRelative(Robot_Heading, -6.7, 15.25, 75);
+    DriveFieldRelative(Robot_Heading, -5.2, 15.25, 75);
 
-    RCSFunctionRotate(&APPLE_LOCATION, 50);
+    RCSFunctionRotate(&APPLE_LOCATION, 75);
 
     BIG_SERVO_ROTATE(112);
 
-    RCSFunctionDrive(&APPLE_LOCATION, 50, 0.9);
+    RCSFunctionDrive(&APPLE_LOCATION, 50, 0.8);
 
     //Correct error
-    //RCSFunctionDrive(&APPLE_LOCATION, 25, 1.0);
+    RCSFunctionDrive(&APPLE_LOCATION, 25, .8);
 
     Sleep(0.1);
 
     DriveFieldRelative(Robot_Heading, -1, 0, 50);
-
+    
     BIG_SERVO_ROTATE(70);
 
     Sleep(0.25);
 
     DriveFieldRelative(Robot_Heading, 17.41, -6.79, 75);
 
-    RCSFunctionRotate(&BOTTOM_RAMP_LOCATION, 50);
+    RCSFunctionRotate(&BOTTOM_RAMP_LOCATION, 75);
 
     RCSFunctionDrive(&BOTTOM_RAMP_LOCATION, 50, 1.0);
 
     //Drive up ramp
-    DriveFieldRelative(Robot_Heading, -4, 32, 65);
+    DriveFieldRelative(Robot_Heading, -4, 32, 75);
 
-    RCSFunctionRotate(&TOP_RAMP_LOCATION, 50);
+    RCSFunctionRotate(&TOP_RAMP_LOCATION, 75);
 
     RCSFunctionDrive(&TOP_RAMP_LOCATION, 75, 1.0);
 
@@ -767,6 +803,8 @@ void APPLE_BASKET(){
 
     BIG_SERVO.Off();
 
+    Sleep(0.1);
+    
     DriveFieldRelative(Robot_Heading, 0, -5, 75);
 }
 
@@ -777,7 +815,7 @@ void LEVER(){
     DriveFieldRelative(Robot_Heading, -14.11, 6.67, 75);
 
     //Corrects location and heading
-    RCSFunctionRotate(&LEVER_LOCATION, 50);
+    RCSFunctionRotate(&LEVER_LOCATION, 75);
     RCSFunctionDrive(&LEVER_LOCATION, 50, .9);
 
 
@@ -793,8 +831,9 @@ void LEVER(){
         LCD.WriteLine("LEFT LEVER READ");
 
         //Moves to correct lever
-        RCSFunctionRotate(&LEFT_LEVER_LOCATION, 50);
+        RCSFunctionRotate(&LEFT_LEVER_LOCATION, 75);
         RCSFunctionDrive(&LEFT_LEVER_LOCATION, 25, 0.82);
+        FLIP_LEVER();
     }
 
     //Process for middle lever
@@ -804,8 +843,9 @@ void LEVER(){
         LCD.WriteLine("MIDDLE LEVER READ");
 
         //Moves to correct lever
-        RCSFunctionRotate(&MIDDLE_LEVER_LOCATION, 50);
+        RCSFunctionRotate(&MIDDLE_LEVER_LOCATION, 75);
         RCSFunctionDrive(&MIDDLE_LEVER_LOCATION, 25, 0.85);
+        FLIP_LEVER();
     }
 
     //Process for right lever
@@ -815,11 +855,12 @@ void LEVER(){
         LCD.WriteLine("RIGHT LEVER READ");
 
         //Moves to correct lever
-        RCSFunctionRotate(&RIGHT_LEVER_LOCATION, 50);
+        RCSFunctionRotate(&RIGHT_LEVER_LOCATION, 75);
         RCSFunctionDrive(&RIGHT_LEVER_LOCATION, 25, 0.92);
+        FLIP_LEVER();
     }
 
-    FLIP_LEVER();
+    
 
     
 }
@@ -832,7 +873,7 @@ void HUMIDIFIER(){
     RCSFunctionDrive(&HUMIDIFIER_LOCATION, 50, 1.0);
 
     //Correct heading
-    RCSFunctionRotate(&HUMIDIFIER_LOCATION, 50);
+    RCSFunctionRotate(&HUMIDIFIER_LOCATION, 75);
 
     //Correct error
     RCSFunctionDrive(&HUMIDIFIER_LOCATION, 25,1.0);
@@ -855,13 +896,13 @@ void WINDOW(){
     DriveFieldRelative(Robot_Heading, 4, 0, 50);
 
     //Correct heading
-    RCSFunctionRotate(&WINDOW_LOCATION, 50);
+    RCSFunctionRotate(&WINDOW_LOCATION, 75);
 
     BIG_SERVO_ROTATE(90);
 
-    RCSFunctionDrive(&WINDOW_LOCATION, 50, 1.0);
+    RCSFunctionDrive(&WINDOW_LOCATION, 75, .9);
 
-    BIG_SERVO_ROTATE(110);
+    BIG_SERVO_ROTATE(108.5);
 
     //Correct error
     RCSFunctionDrive(&WINDOW_LOCATION, 25,.80);
@@ -871,7 +912,7 @@ void WINDOW(){
 
     RotateDegrees(-50, 65);
 
-    RCSFunctionRotate(&Window_PRE_Close, 50);
+    RCSFunctionRotate(&Window_PRE_Close, 75);
 
     RCSFunctionDrive(&Window_PRE_Close, 75, 1.0);
 
@@ -883,13 +924,13 @@ void WINDOW(){
 
     DriveFieldRelative(Robot_Heading, -1, 0, 50);
 
-    BIG_SERVO_ROTATE(110);
+    BIG_SERVO_ROTATE(108.5);
 
     RCSFunctionDrive(&Window_POST_Close, 75, 1.0);
 
     //RotateDegrees(40, 65);
 
-    RCSFunctionRotate(&Window_POST_Close, 50);
+    RCSFunctionRotate(&Window_POST_Close, 75);
 
     DriveFieldRelative(Robot_Heading, 7, 0, 65);
     
@@ -899,7 +940,7 @@ void WINDOW(){
 
     DriveFieldRelative(Robot_Heading, -2, 0, 50);
 
-    BIG_SERVO_ROTATE(110);
+    BIG_SERVO_ROTATE(108.5);
 
     DriveFieldRelative(Robot_Heading, 4, 0, 50);
 
@@ -911,7 +952,7 @@ void FinalButton(){
 
     BIG_SERVO_ROTATE(75);
 
-    RCSFunctionRotate(&FINAL_Top_Ramp_LOCATION, 50);
+    RCSFunctionRotate(&FINAL_Top_Ramp_LOCATION, 75);
 
     RCSFunctionDrive(&FINAL_Top_Ramp_LOCATION, 40, .9);
 
@@ -922,9 +963,13 @@ void FinalButton(){
     //Failsafe
     DriveFieldRelative(Robot_Heading, -4, 4, 50);
 
-    RCSFunctionRotate(&FINAL_Top_Ramp_LOCATION, 50);
+    RCSFunctionRotate(&Final_Final_Button_Location, 75);
 
-    RCSFunctionDrive(&FINAL_Button_LOCATION, 75, 1.5);
+    RCSFunctionDrive(&FINAL_Button_LOCATION, 85, 2);
+
+    DriveFieldRelative(Robot_Heading, -4, 4, 50);
+
+    RCSFunctionDrive(&Final_Final_Button_Location, 85, 2);
 }
 
 //Completes the compost mechanism task
@@ -933,8 +978,6 @@ void FinalButton(){
 void ERCMain()
 {
     int i = 135;
-
-    
     
     //RCS AND ROBOT CALIBRATION
     ROBOT_CALIBRATION();
