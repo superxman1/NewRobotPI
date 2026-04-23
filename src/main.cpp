@@ -793,7 +793,7 @@ void APPLE_BASKET(){
 
     RCSFunctionRotate(&TOP_RAMP_LOCATION, 75);
 
-    RCSFunctionDrive(&TOP_RAMP_LOCATION, 75, 1.0);
+    RCSFunctionDrive(&TOP_RAMP_LOCATION, 50, 1.0);
 
     DriveFieldRelative(Robot_Heading, 0, 3, 75);
 
@@ -924,7 +924,7 @@ void WINDOW(){
 
     DriveFieldRelative(Robot_Heading, -1, 0, 50);
 
-    BIG_SERVO_ROTATE(108.5);
+    BIG_SERVO_ROTATE(111);
 
     RCSFunctionDrive(&Window_POST_Close, 75, 1.0);
 
