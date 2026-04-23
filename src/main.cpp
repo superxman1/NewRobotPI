@@ -89,7 +89,7 @@ void Stop(); */
 
 #define START_LIGHT 1.5
 #define RED_LIGHT 2.0
-#define BLUE_LIGHT_MIN 1.4
+#define BLUE_LIGHT_MIN 1.45
 #define BLUE_LIGHT_MAX 2.6
 
 
@@ -747,9 +747,9 @@ void COMPOST(){
  
     //Rotate continuous servo both directions
     CONTINUOUS_SERVO.SetDegree(105);
-    Sleep(1.3);
+    Sleep(1.5);
     CONTINUOUS_SERVO.SetDegree(65);
-    Sleep(1.3);
+    Sleep(1.5);
     CONTINUOUS_SERVO.Off();
 
     //Back away
@@ -784,14 +784,16 @@ void APPLE_BASKET(){
 
     DriveFieldRelative(Robot_Heading, 17.41, -6.79, 75);
 
-    RCSFunctionRotate(&BOTTOM_RAMP_LOCATION, 75);
+    RCSFunctionRotate(&BOTTOM_RAMP_LOCATION, 45);
 
     RCSFunctionDrive(&BOTTOM_RAMP_LOCATION, 50, 1.0);
 
     //Drive up ramp
-    DriveFieldRelative(Robot_Heading, -4, 32, 75);
+    DriveFieldRelative(Robot_Heading, -1, 32, 75);
 
-    RCSFunctionRotate(&TOP_RAMP_LOCATION, 75);
+    DriveFieldRelative(Robot_Heading, -3, 0, 50);
+
+    RCSFunctionRotate(&TOP_RAMP_LOCATION, 45);
 
     RCSFunctionDrive(&TOP_RAMP_LOCATION, 50, 1.0);
 
@@ -902,10 +904,10 @@ void WINDOW(){
 
     RCSFunctionDrive(&WINDOW_LOCATION, 75, .9);
 
-    BIG_SERVO_ROTATE(108.5);
-
     //Correct error
     RCSFunctionDrive(&WINDOW_LOCATION, 25,.80);
+
+    BIG_SERVO_ROTATE(108.5);
 
     //Correct error
     RCSFunctionDrive(&WINDOW_LOCATION, 25, .75);
@@ -925,6 +927,10 @@ void WINDOW(){
     DriveFieldRelative(Robot_Heading, -1, 0, 50);
 
     BIG_SERVO_ROTATE(111);
+
+    Sleep(0.2);
+
+    DriveFieldRelative(Robot_Heading, 0, -.5, 50);
 
     RCSFunctionDrive(&Window_POST_Close, 75, 1.0);
 
