@@ -774,6 +774,8 @@ void APPLE_BASKET(){
     //Correct error
     RCSFunctionDrive(&APPLE_LOCATION, 25, .8);
 
+    RCSFunctionDrive(&APPLE_LOCATION, 25, .5);
+
     Sleep(0.1);
 
     DriveFieldRelative(Robot_Heading, -1, 0, 50);
@@ -883,6 +885,8 @@ void HUMIDIFIER(){
     //Correct error
     RCSFunctionDrive(&HUMIDIFIER_LOCATION, 25, .85);
 
+    //RCSFunctionDrive(&HUMIDIFIER_LOCATION, 25, .70);
+
     Sleep(0.4);
 
     //Reads CDS value for humidifer light
@@ -948,7 +952,9 @@ void WINDOW(){
 
     BIG_SERVO_ROTATE(108.5);
 
-    DriveFieldRelative(Robot_Heading, 4, 0, 50);
+    DriveFieldRelative(Robot_Heading, 6, 0, 50);
+
+    RotateDegrees(30, 65);
 
     DriveFieldRelative(Robot_Heading, -2, 2, 50);
 }
