@@ -68,7 +68,7 @@ struct CourseCoordinates Window_POST_Close = {150, 11.3, 45.4};
 struct CourseCoordinates FINAL_Button_LOCATION = {105, 29.50, 7.30};
 struct CourseCoordinates Final_Final_Button_Location = {15, 28.50, 6.30};
 
-
+//Declares all functions
 void START_MOTORS(); //stops the motion of all motors 
 void STOP();
 void SERVO_CALIBRATION();
@@ -104,6 +104,7 @@ void HUMIDIFIER();
 void WINDOW();
 void FinalButton();
 
+//Declares global variables
 float drive_angle, unit_direction_x, unit_direction_y;
 float LEFT_POWER, RIGHT_POWER, BACK_POWER;
 int LEFT_COUNTS, RIGHT_COUNTS, BACK_COUNTS;
