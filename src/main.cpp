@@ -989,9 +989,33 @@ void FinalButton(){
 
 void ERCMain()
 {
-    int i = 135;
+    //CDS Cell Testing
+    while(1){
+        LCD.Clear();
+        LCD.WriteLine("CdS Cell Value:");
+        LCD.WriteLine(CdS_cell.Value());
+        Sleep(0.3);
+    }
 
+    //RCS Values Testing
     
+    /*
+    ROBOT_CALIBRATION();
+    while(1){
+        WaitForTouch();
+        if (RCSData() == 1) {
+            LCD.Clear();
+            LCD.WriteLine("RCS Data Received:");
+            LCD.Write("Heading: "); LCD.Write(Robot_Heading);
+            LCD.Write("\nX: "); LCD.Write(X_POS);
+            LCD.Write("\nY: "); LCD.Write(Y_POS);
+        }
+    }
+    */
+
+    //For Full runs
+
+    /*
     
     //RCS AND ROBOT CALIBRATION
     ROBOT_CALIBRATION();
@@ -1017,10 +1041,6 @@ void ERCMain()
 
     FinalButton();
 
-    while(1){
-        LCD.WriteLine(CdS_cell.Value());
-        Sleep(0.3);
-         LCD.Clear();
-    }
+    */
     
 }
