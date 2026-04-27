@@ -597,6 +597,14 @@ int HUMIDIFIER_LIGHT(){
         Sleep(0.3);
 
         LCD.Clear();
+
+    //Check again if Cds cell returns a inconculsive value because it is to close to the threshold
+    if(CdS_cell.Value() < BLUE_LIGHT_MIN + .2 && CdS_cell.Value() > BLUE_LIGHT_MIN - .2){
+        LCD.WriteLine("INCONCLUSIVE, CHECKING AGAIN");
+        return 3; //Inconclusive
+    }
+
+
     if(CdS_cell.Value() < BLUE_LIGHT_MIN){
         //Writes information to screen
         LCD.WriteLine("RED LIGHT DETECTED");
@@ -863,10 +871,6 @@ void LEVER(){
         RCSFunctionDrive(&RIGHT_LEVER_LOCATION, 25, 0.87);
         FLIP_LEVER();
     }
-
-    
-
-    
 }
 
 
@@ -889,10 +893,26 @@ void HUMIDIFIER(){
 
     Sleep(0.4);
 
+    int lightResult = HUMIDIFIER_LIGHT();
     //Reads CDS value for humidifer light
-    if(HUMIDIFIER_LIGHT() == 2){
+    if(lightResult == 3){
+        RCSFunctionDrive(&HUMIDIFIER_LOCATION, 25, .50);
+        lightResult = HUMIDIFIER_LIGHT();
+        if(lightResult == 3 || lightResult == 2){
+            LCD.Clear();
+            LCD.WriteLine("ERROR: INCONCLUSIVE LIGHT VALUE");
+            LCD.WriteLine("DEFAULTING TO Red");
+            DriveFieldRelative(Robot_Heading, -4.77, 1.58, 50);
+        }
+    } else if(lightResult == 2){
         RCSFunctionDrive(&HUMIDIFIER_LOCATION, 25, .80);
-        HUMIDIFIER_LIGHT();
+        lightResult = HUMIDIFIER_LIGHT();
+        if(lightResult == 3 || lightResult == 2){
+            LCD.Clear();
+            LCD.WriteLine("ERROR: INCONCLUSIVE LIGHT VALUE");
+            LCD.WriteLine("DEFAULTING TO Red");
+            DriveFieldRelative(Robot_Heading, -4.77, 1.58, 50);
+        }
     }
 }
 
@@ -989,9 +1009,6 @@ void FinalButton(){
 
 void ERCMain()
 {
-    int i = 135;
-
-    
     
     //RCS AND ROBOT CALIBRATION
     ROBOT_CALIBRATION();
@@ -1016,11 +1033,5 @@ void ERCMain()
     WINDOW();
 
     FinalButton();
-
-    while(1){
-        LCD.WriteLine(CdS_cell.Value());
-        Sleep(0.3);
-         LCD.Clear();
-    }
     
 }
