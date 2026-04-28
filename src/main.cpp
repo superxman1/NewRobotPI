@@ -89,7 +89,7 @@ void Stop(); */
 
 #define START_LIGHT 1.5
 #define RED_LIGHT 2.0
-#define BLUE_LIGHT_MIN 1.45
+#define BLUE_LIGHT_MIN 1.6
 #define BLUE_LIGHT_MAX 2.6
 
 
@@ -599,7 +599,7 @@ int HUMIDIFIER_LIGHT(){
         LCD.Clear();
 
     //Check again if Cds cell returns a inconculsive value because it is to close to the threshold
-    if(CdS_cell.Value() < BLUE_LIGHT_MIN + .2 && CdS_cell.Value() > BLUE_LIGHT_MIN - .2){
+    if(CdS_cell.Value() < BLUE_LIGHT_MIN + .1 && CdS_cell.Value() > BLUE_LIGHT_MIN - .1){
         LCD.WriteLine("INCONCLUSIVE, CHECKING AGAIN");
         return 3; //Inconclusive
     }
